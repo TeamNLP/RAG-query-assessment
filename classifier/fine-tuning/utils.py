@@ -1,3 +1,4 @@
+from datasets import load_dataset
 from transformers import (
     CONFIG_MAPPING,
     AutoConfig,
@@ -11,8 +12,8 @@ from transformers import (
 def load_model(args):
     """
     Load pretrained model and tokenizer
-    
-    Distributed training:
+
+    In distributed training:
     The .from_pretrained methods guarantee that only one local process can concurrently download model & vocab.
     """
 
@@ -45,3 +46,38 @@ def load_model(args):
         model = AutoModelForSeq2SeqLM.from_config(config)
         
     return model, tokenizer
+
+
+def load_ft_dataset(args):
+    """
+    Get the fine-tuning datasets: you can provide JSON training and evaluation files
+    or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
+    (the dataset will be downloaded automatically from the datasets Hub).
+    
+    In distributed training:
+    The load_dataset function guarantee that only one local process can concurrently download the dataset.
+    """
+    
+    if args.dataset_name is not None:
+        # Downloading and loading a dataset from the hub.
+        raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name)
+    else:
+        data_files = {}
+        if args.train_file is not None:
+            extension = args.train_file.split(".")[-1].lower()
+            assert extension == "json", "`train_file` should be a json file."
+            data_files["train"] = args.train_file
+        if args.validation_file is not None:
+            extension = args.validation_file.split(".")[-1].lower()
+            assert extension == "json", "`validation_file` should be a json file."
+            data_files["validation"] = args.validation_file
+        if args.test_file is not None:
+            extension = args.test_file.split(".")[-1].lower()
+            assert extension == "json", "`test_file` should be a json file."
+            data_files["test"] = args.test_file
+        raw_datasets = load_dataset(
+            extension,
+            data_files=data_files,
+        )
+
+    return raw_datasets
