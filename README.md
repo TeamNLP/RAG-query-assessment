@@ -17,4 +17,5 @@
 ## Usage
 ```bash
 sh scripts/RAG_evaluation_auto.sh
+sh scripts/ft_dataset_labeling.sh
 ```
