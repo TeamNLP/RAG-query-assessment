@@ -3,3 +3,5 @@ rank_bm25
 nltk
 openai
 python-dotenv
+loguru
+transformers
