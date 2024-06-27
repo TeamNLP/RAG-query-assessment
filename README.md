@@ -14,8 +14,14 @@
 └── scripts
 ```
 
+## Installation
+```bash
+sh scripts/env_reproduction.sh
+```
+
 ## Usage
 ```bash
 sh scripts/RAG_evaluation_auto.sh
 sh scripts/ft_dataset_labeling.sh
+sh scripts/fine_tuning_classifier.sh
 ```

@@ -5,3 +5,6 @@ openai
 python-dotenv
 loguru
 transformers
+
+--extra-index-url https://download.pytorch.org/whl/cu121
+torch
