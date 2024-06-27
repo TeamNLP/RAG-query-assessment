@@ -212,7 +212,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.output_path):
         os.makedirs(args.output_path)
 
-    with open(f"{args.output_path}/{TARGET_MODEL_NAME.split('/')[-1].lower()}_evaluated_by_{args.evaluation_model_name}.json", 'w') as f:
+    with open(f"{args.output_path}/{TARGET_MODEL_NAME.split('/')[-1].lower()}_evaluated_by_{args.evaluation_model_name}.jsonl", 'w') as f:
         for prediction in predictions:
             json_record = json.dumps(prediction, ensure_ascii=False)
             f.write(json_record + '\n')
