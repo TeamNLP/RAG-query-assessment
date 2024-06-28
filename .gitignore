@@ -1,5 +1,6 @@
 api_responses/
 data
+classifier/model/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

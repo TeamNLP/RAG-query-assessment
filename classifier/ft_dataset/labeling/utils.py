@@ -14,3 +14,9 @@ def dump_jsonl(data, output_path, append=False):
         for line in data:
             json_record = json.dumps(line, ensure_ascii=False)
             f.write(json_record + '\n')
+
+
+def dump_json(data, output_path, append=False):
+    mode = 'a+' if append else 'w'
+    with open(output_path, mode, encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)

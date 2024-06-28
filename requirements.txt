@@ -1,3 +1,4 @@
+accelerate>=0.21.0
 pandas
 rank_bm25
 nltk
@@ -5,6 +6,7 @@ openai
 python-dotenv
 loguru
 transformers
+datasets
 
 --extra-index-url https://download.pytorch.org/whl/cu121
 torch

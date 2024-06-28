@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from utils import load_jsonl, dump_jsonl
+from utils import load_jsonl, dump_json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-l', '--large_model_eval_result_path', type=str, default="auto_evaluation/result/meta-llama-3-70b-instruct_evaluated_by_gpt-3.5-turbo-0125.jsonl", help="Path of the Large model evaluation results file")
@@ -50,9 +50,8 @@ def query_wise_label(large_model_result, small_model_result):
             rewriting_label = True
 
         datum = {}
-        datum["query"] = large_model_result[i]["query"]
-        datum["ground_truth"] = large_model_result[i]["ground_truth"]
-        datum["rewriting_label"] = rewriting_label
+        datum["text"] = large_model_result[i]["query"]
+        datum["label"] = rewriting_label
         labeled_dataset.append(datum)
 
     return labeled_dataset
@@ -66,4 +65,4 @@ if __name__ == "__main__":
     small_model_result = categorize_score(small_model_result, args.small_model_threshold)
 
     labeled_dataset = query_wise_label(large_model_result, small_model_result)
-    dump_jsonl(labeled_dataset, args.result_file_path)
+    dump_json(labeled_dataset, args.result_file_path)
