@@ -50,9 +50,8 @@ def query_wise_label(large_model_result, small_model_result):
             rewriting_label = True
 
         datum = {}
-        datum["query"] = large_model_result[i]["query"]
-        datum["ground_truth"] = large_model_result[i]["ground_truth"]
-        datum["rewriting_label"] = rewriting_label
+        datum["text"] = large_model_result[i]["query"]
+        datum["label"] = rewriting_label
         labeled_dataset.append(datum)
 
     return labeled_dataset
