@@ -20,8 +20,18 @@ sh scripts/env_reproduction.sh
 ```
 
 ## Usage
+
+### Classifier
 ```bash
-sh scripts/RAG_evaluation_auto.sh
+sh scripts/evaluation_for_labeling.sh
 sh scripts/ft_dataset_labeling.sh
 sh scripts/fine_tuning_classifier.sh
+```
+
+### Rewriter
+
+### Experiments
+
+```bash
+sh scripts/experimental_setup.sh
 ```

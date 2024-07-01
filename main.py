@@ -1,15 +1,12 @@
 import os
 
 from rank_bm25 import BM25Okapi
-from nltk.tokenize import word_tokenize
-import nltk
 from openai import OpenAI
 import dotenv
 dotenv.load_dotenv()
 api_key = os.environ.get('OPENAI_API_KEY')
 
 client = OpenAI(api_key=api_key)
-nltk.download('punkt')
 
 class Retriever:
     def __init__(self, documents, method='bm25', top_n=5):

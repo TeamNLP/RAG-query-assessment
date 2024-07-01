@@ -15,7 +15,7 @@ from transformers import LlamaTokenizerFast
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, default="ms_marco.jsonl", help="File path to the dataset file to evaluate")
-parser.add_argument('--evaluation_model_name', type=str, default="gpt-3.5-turbo-0125", help="The name of the OpenAI model to use for evaluation. We recommend using `gpt-4o-2024-05-13`, `gpt-4-0125-preview`, or `gpt-3.5-turbo-0125`. See https://platform.openai.com/docs/models.")
+parser.add_argument('--evaluator_model', type=str, default="gpt-3.5-turbo-0125", help="The name of the OpenAI model to use for evaluation. We recommend using `gpt-4o-2024-05-13`, `gpt-4-0125-preview`, or `gpt-3.5-turbo-0125`. See https://platform.openai.com/docs/models.")
 parser.add_argument('--target_model_name', type=str, default=None, help="Name of the model being evaluated. e.g., `meta-llama/Meta-Llama-3-70B-Instruct` or `meta-llama/Meta-Llama-3-8B-Instruct`.")
 parser.add_argument('--output_path', type=str, default="result", help="Diretory Path to save evaluation results")
 
@@ -123,7 +123,7 @@ def get_eval_result_log(eval_type):
     return eval_result_log
 
 
-def evaluate_predictions(predictions, evaluation_model_name, openai_client):
+def evaluate_predictions(predictions, evaluator_model, openai_client):
     n_miss, n_correct, n_correct_exact = 0, 0, 0
     system_message = get_system_message()
 
@@ -156,7 +156,7 @@ def evaluate_predictions(predictions, evaluation_model_name, openai_client):
             continue
 
         response = attempt_api_call(
-            openai_client, evaluation_model_name, messages
+            openai_client, evaluator_model, messages
         )
         if response:
             log_response(messages, response)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     dotenv.load_dotenv()
 
     DATASET_PATH = args.dataset_path
-    EVALUATION_MODEL_NAME = args.evaluation_model_name
+    evaluator_model = args.evaluator_model
     TARGET_MODEL_NAME = args.target_model_name
 
     # Get generated predictions
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     openai_client = OpenAI(api_key = os.environ.get('OPENAI_API_KEY'))
 
     evaluation_results, result_logs = evaluate_predictions(
-        predictions, EVALUATION_MODEL_NAME, openai_client
+        predictions, evaluator_model, openai_client
     )
     assert len(predictions) == len(result_logs), f"len(predictions): {len(predictions)}, len(result_logs): {len(result_logs)}"
     
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.output_path):
         os.makedirs(args.output_path)
 
-    with open(f"{args.output_path}/{TARGET_MODEL_NAME.split('/')[-1].lower()}_evaluated_by_{args.evaluation_model_name}.jsonl", 'w') as f:
+    with open(f"{args.output_path}/{TARGET_MODEL_NAME.split('/')[-1].lower()}_evaluated_by_{args.evaluator_model}.jsonl", 'w') as f:
         for prediction in predictions:
             json_record = json.dumps(prediction, ensure_ascii=False)
             f.write(json_record + '\n')
