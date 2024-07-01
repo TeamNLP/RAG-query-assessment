@@ -1,13 +1,15 @@
 api_responses/
 data
 classifier/model/
+raw_data/
+.temp/
 
-official_evaluation/2wikimultihopqa/*
-!official_evaluation/2wikimultihopqa/.gitkeep
-official_evaluation/hotpotqa/*
-!official_evaluation/hotpotqa/.gitkeep
-official_evaluation/musique/*
-!official_evaluation/musique/.gitkeep
+evaluation/official_evaluation/2wikimultihopqa/*
+!evaluation/official_evaluation/2wikimultihopqa/.gitkeep
+evaluation/official_evaluation/hotpotqa/*
+!evaluation/official_evaluation/hotpotqa/.gitkeep
+evaluation/official_evaluation/musique/*
+!evaluation/official_evaluation/musique/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
