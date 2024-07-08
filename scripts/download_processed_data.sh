@@ -15,7 +15,9 @@ unzip  -o .temp/processed_data.zip -d experiments -x "*.DS_Store"
 
 rm -rf .temp/
 
-# The resulting processed_data/ directory should look like:
+
+# The resulting experiments/processed_data/ directory should look like:
+# .
 # ├── 2wikimultihopqa
 # │   ├── annotated_only_train.jsonl
 # │   ├── dev.jsonl

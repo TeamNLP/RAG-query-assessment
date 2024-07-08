@@ -24,11 +24,13 @@ from metrics.support_em_f1 import SupportEmF1Metric
 from metrics.answer_support_recall import AnswerSupportRecallMetric
 from metrics.squad_answer_em_f1 import SquadAnswerEmF1Metric
 
+
 # Set your path accordingly
-base_pred_path = './predictions/classifier/t5-large/flan_t5_xl/epoch/25/2024_04_19/01_53_50'
+base_pred_path = 'predictions'
 
 if base_pred_path[-1] == "/":
     base_pred_path = base_pred_path[:-1]
+
 
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
@@ -48,6 +50,7 @@ def normalize_answer(s):
         return text.lower()
 
     return white_space_fix(remove_articles(remove_punc(lower(s)))) 
+
 
 def answer_extractor(potentially_cot: str) -> str:
     # In a few experiments I forgot the configuring the answer extractor part
@@ -69,6 +72,7 @@ def answer_extractor(potentially_cot: str) -> str:
 
     return output
 
+
 def load_ground_truths(
     ground_truth_file_path: str,
 ) -> Dict:
@@ -87,6 +91,7 @@ def load_predictions(prediction_file_path):
         id_to_predictions = json.load(file)
     return id_to_predictions
 
+
 # Save
 def save_results(results_dict, output_path):
     output_path = output_path
@@ -94,15 +99,17 @@ def save_results(results_dict, output_path):
     with open(output_path, "w") as file:
         json.dump(results_dict, file, indent=4)
 
+
 def calculate_acc(prediction, ground_truth):
     for gt in ground_truth:
         if gt in prediction:
             return 1
     return 0
 
+
 def evaluate_by_dicts(data_name):
     metrics = [SquadAnswerEmF1Metric()]
-    id_to_predictions = load_predictions(f"base_pred_path/{data_name}/{data_name}.json")
+    id_to_predictions = load_predictions(f"{base_pred_path}/{data_name}/{data_name}.json")
     id_to_ground_truths = load_ground_truths(f"processed_data/{data_name}/test_subsampled.jsonl")
     total_acc = 0
 
@@ -129,7 +136,8 @@ def evaluate_by_dicts(data_name):
     evaluation_results = metrics[0].get_metric()
     evaluation_results['acc'] = total_acc        
 
-    save_results(evaluation_results, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
+    save_results(evaluation_results, f"{base_pred_path}/{data_name}/eval_metic_result_acc.json")
+
 
 def official_evaluate_by_dicts(data_name):
     id_to_predictions = load_predictions()
@@ -206,7 +214,7 @@ def official_evaluate_by_dicts(data_name):
         os.remove(temp_prediction_file_path)
         os.remove(temp_output_file_path)
 
-        save_results(metrics, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
+        save_results(metrics, f"{base_pred_path}/{data_name}/eval_metic_result_acc.json")
         #return metrics
 
     if data_name == "2wikimultihopqa":
@@ -269,7 +277,7 @@ def official_evaluate_by_dicts(data_name):
         os.remove(temp_output_file_path)
 
         #return metrics
-        save_results(metrics, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
+        save_results(metrics, f"{base_pred_path}/{data_name}/eval_metic_result_acc.json")
 
     if data_name == "musique":
 
@@ -335,7 +343,7 @@ def official_evaluate_by_dicts(data_name):
         os.remove(temp_output_file_path)
 
         #return metrics
-        save_results(metrics, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
+        save_results(metrics, f"{base_pred_path}/{data_name}/eval_metic_result_acc.json")
 
 
 def main():

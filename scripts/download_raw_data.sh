@@ -42,27 +42,72 @@ mv experiments/raw_data/hotpotqa/enwiki-20171001-pages-meta-current-withlinks-ab
 
 rm -rf .temp/
 
+echo "\n\nDownloading Natural Question\n"
+mkdir -p experiments/raw_data/nq
+cd experiments/raw_data/nq
+wget https://dl.fbaipublicfiles.com/dpr/data/retriever/biencoder-nq-dev.json.gz
+gzip -d biencoder-nq-dev.json.gz
+wget https://dl.fbaipublicfiles.com/dpr/data/retriever/biencoder-nq-train.json.gz
+gzip -d biencoder-nq-train.json.gz
+
+echo "\n\nDownloading TriviaQA\n"
+cd ..
+mkdir -p trivia
+cd trivia
+wget https://dl.fbaipublicfiles.com/dpr/data/retriever/biencoder-trivia-dev.json.gz
+gzip -d biencoder-trivia-dev.json.gz
+wget https://dl.fbaipublicfiles.com/dpr/data/retriever/biencoder-trivia-train.json.gz
+gzip -d biencoder-trivia-train.json.gz
+
+echo "\n\nDownloading SQuAD\n"
+cd ..
+mkdir -p squad
+cd squad
+wget https://dl.fbaipublicfiles.com/dpr/data/retriever/biencoder-squad1-dev.json.gz
+gzip -d biencoder-squad1-dev.json.gz
+wget https://dl.fbaipublicfiles.com/dpr/data/retriever/biencoder-squad1-train.json.gz
+gzip -d biencoder-squad1-train.json.gz
+
+echo "\n\nDownloading Wiki passages. For the singe-hop datasets, we use the Wikipedia as the document corpus.\n"
+cd ..
+mkdir -p wiki
+cd wiki
+wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
+gzip -d psgs_w100.tsv.gz
+
+
 # The resulting experiments/raw_data/ directory should look like:
-# ── 2wikimultihopqa
-# │   ├── dev.json
-# │   ├── id_aliases.json
-# │   ├── test.json
-# │   └── train.json
+# .
+# ├── 2wikimultihopqa
+# │   ├── dev.json
+# │   ├── id_aliases.json
+# │   ├── test.json
+# │   └── train.json
 # ├── hotpotqa
-# │   ├── dev_random_20_single_hop_annotations.txt
-# │   ├── wikpedia-paragraphs/
-# │   ├──  ├── ...
-# │   ├── hotpot_dev_distractor_v1.json
-# │   └── train_random_20_single_hop_annotations.txt
+# │   ├── hotpot_dev_distractor_v1.json
+# │   ├── hotpot_train_v1.1.json
+# │   └── wikpedia-paragraphs
+# │        ├── ...
 # ├── iirc
-# │   ├── context_articles.json
-# │   ├── dev.json
-# │   └── train.json
-# └── musique
-#     ├── dev_test_singlehop_questions_v1.0.json
-#     ├── musique_ans_v1.0_dev.jsonl
-#     ├── musique_ans_v1.0_test.jsonl
-#     ├── musique_ans_v1.0_train.jsonl
-#     ├── musique_full_v1.0_dev.jsonl
-#     ├── musique_full_v1.0_test.jsonl
-#     └── musique_full_v1.0_train.jsonl
+# │   ├── context_articles.json
+# │   ├── dev.json
+# │   └── train.json
+# ├── musique
+# │   ├── dev_test_singlehop_questions_v1.0.json
+# │   ├── musique_ans_v1.0_dev.jsonl
+# │   ├── musique_ans_v1.0_test.jsonl
+# │   ├── musique_ans_v1.0_train.jsonl
+# │   ├── musique_full_v1.0_dev.jsonl
+# │   ├── musique_full_v1.0_test.jsonl
+# │   └── musique_full_v1.0_train.jsonl
+# ├── nq
+# │   ├── biencoder-nq-dev.json
+# │   └── biencoder-nq-train.json
+# ├── squad
+# │   ├── biencoder-squad1-dev.json
+# │   └── biencoder-squad1-train.json
+# ├── trivia
+# │   ├── biencoder-trivia-dev.json
+# │   └── biencoder-trivia-train.json
+# └── wiki
+#     └── psgs_w100.tsv
