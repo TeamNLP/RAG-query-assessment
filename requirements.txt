@@ -6,6 +6,7 @@ python-dotenv
 loguru
 transformers
 datasets
+rapidfuzz
 
 --extra-index-url https://download.pytorch.org/whl/cu121
 torch

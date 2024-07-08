@@ -3,14 +3,39 @@
 ```bash
 ├── classifier
 │   ├── fine-tuning
-│   └── ft_dataset
-│       ├── generation
-│       └── labeling
-│           └── auto_evaluation
-│               ├── prompts
-│               └── result
+│   ├── ft_dataset
+│   │   ├── generation
+│   │   └── labeling
+│   │       └── auto_evaluation
+│   │           ├── prompts
+│   │           └── result
+│   └── model
+├── experiments
+│   ├── metrics
+│   ├── official_evaluation
+│   │   ├── 2wikimultihopqa
+│   │   ├── hotpotqa
+│   │   └── musique
+│   ├── predictions
+│   ├── processed_data
+│   │   ├── 2wikimultihopqa
+│   │   ├── hotpotqa
+│   │   ├── iirc
+│   │   ├── musique
+│   │   ├── nq
+│   │   ├── squad
+│   │   └── trivia
+│   ├── processing
+│   └── raw_data
+│       ├── 2wikimultihopqa
+│       ├── hotpotqa
+│       ├── iirc
+│       ├── musique
+│       ├── nq
+│       ├── squad
+│       ├── trivia
+│       └── wiki
 ├── rewriter
-├── official_evaluation
 └── scripts
 ```
 
