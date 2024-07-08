@@ -11,7 +11,6 @@ import argparse
 from typing import Dict, Any
 import string
 
-import _jsonnet
 from lib import (
     read_json,
     read_jsonl,
@@ -79,7 +78,6 @@ def load_ground_truths(
     id_to_ground_truths = {}
     with jsonlines.open(ground_truth_file_path, 'r') as input_file:
         for line in input_file:
-            #import pdb; pdb.set_trace()
             qid = line['question_id']
             answer = line['answers_objects'][0]['spans']
             id_to_ground_truths[qid] = answer
