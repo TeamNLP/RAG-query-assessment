@@ -25,7 +25,10 @@ from metrics.answer_support_recall import AnswerSupportRecallMetric
 from metrics.squad_answer_em_f1 import SquadAnswerEmF1Metric
 
 # Set your path accordingly
-base_pred_path = './predictions/classifier/t5-large/flan_t5_xl/epoch/25/2024_04_19/01_53_50/'
+base_pred_path = './predictions/classifier/t5-large/flan_t5_xl/epoch/25/2024_04_19/01_53_50'
+
+if base_pred_path[-1] == "/":
+    base_pred_path = base_pred_path[:-1]
 
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
@@ -99,8 +102,8 @@ def calculate_acc(prediction, ground_truth):
 
 def evaluate_by_dicts(data_name):
     metrics = [SquadAnswerEmF1Metric()]
-    id_to_predictions = load_predictions(base_pred_path + data_name+'/' + data_name+'.json')
-    id_to_ground_truths = load_ground_truths('processed_data/'+data_name+'/test_subsampled.jsonl')
+    id_to_predictions = load_predictions(f"base_pred_path/{data_name}/{data_name}.json")
+    id_to_ground_truths = load_ground_truths(f"processed_data/{data_name}/test_subsampled.jsonl")
     total_acc = 0
 
     for id_ in set(id_to_ground_truths.keys()):
@@ -126,11 +129,11 @@ def evaluate_by_dicts(data_name):
     evaluation_results = metrics[0].get_metric()
     evaluation_results['acc'] = total_acc        
 
-    save_results(evaluation_results, base_pred_path + data_name+'/' +'eval_metic_result_acc.json')
+    save_results(evaluation_results, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
 
 def official_evaluate_by_dicts(data_name):
-    id_to_predictions = load_predictions(base_pred_path + data_name+'/' + data_name+'.json')
-    id_to_ground_truths = load_ground_truths('processed_data/'+data_name+'/test_subsampled.jsonl')
+    id_to_predictions = load_predictions()
+    id_to_ground_truths = load_ground_truths(f"processed_data/{data_name}/test_subsampled.jsonl")
 
     question_ids = list(id_to_predictions.keys())
 
@@ -203,7 +206,7 @@ def official_evaluate_by_dicts(data_name):
         os.remove(temp_prediction_file_path)
         os.remove(temp_output_file_path)
 
-        save_results(metrics, base_pred_path + data_name+'/' +'eval_metic_result_acc.json')
+        save_results(metrics, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
         #return metrics
 
     if data_name == "2wikimultihopqa":
@@ -266,7 +269,7 @@ def official_evaluate_by_dicts(data_name):
         os.remove(temp_output_file_path)
 
         #return metrics
-        save_results(metrics, base_pred_path + data_name+'/' +'eval_metic_result_acc.json')
+        save_results(metrics, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
 
     if data_name == "musique":
 
@@ -332,7 +335,7 @@ def official_evaluate_by_dicts(data_name):
         os.remove(temp_output_file_path)
 
         #return metrics
-        save_results(metrics, base_pred_path + data_name+'/' +'eval_metic_result_acc.json')
+        save_results(metrics, f"base_pred_path/{data_name}/eval_metic_result_acc.json")
 
 
 def main():
