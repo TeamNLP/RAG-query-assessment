@@ -1,6 +1,6 @@
 accelerate>=0.21.0
 pandas
-rank_bm25
+# rank_bm25
 openai
 python-dotenv
 loguru
