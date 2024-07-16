@@ -59,4 +59,5 @@ sh scripts/fine_tuning_classifier.sh
 
 ```bash
 sh scripts/experimental_setup.sh
+sh scripts/exp.sh
 ```
