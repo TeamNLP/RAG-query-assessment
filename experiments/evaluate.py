@@ -125,7 +125,8 @@ def evaluate_by_dicts(data_name):
 
         acc = calculate_acc(normalize_answer(prediction[0]), [normalize_answer(i) for i in ground_truth])
         total_acc = total_acc + acc
-        metrics[0](prediction, ground_truth)
+        assert len(prediction) == 1
+        metrics[0](prediction[0], ground_truth)
         
     total_acc = total_acc / len(id_to_predictions)
     evaluation_results = metrics[0].get_metric()
@@ -194,8 +195,6 @@ def official_evaluate_by_dicts(data_name):
         temp_output_file_path = temp_output_file_path.replace(os.path.join(os.pardir, os.pardir) + os.path.sep, "")
         if not os.path.exists(temp_output_file_path):
             raise Exception("The official evaluation output file not found.")
-
-        print(temp_output_file_path)
 
         with open(temp_output_file_path, "r") as file:
             metrics_ = eval(file.read().strip())
@@ -267,7 +266,7 @@ def official_evaluate_by_dicts(data_name):
                 "precision": round(metrics_["prec"] / 100, 5),
                 "recall": round(metrics_["recall"] / 100, 5),
                 "count": len(id_to_predictions),
-                'acc' : round(metrics_["acc"] / 100, 5),
+                # 'acc' : round(metrics_["acc"] / 100, 5),
             }
 
         os.remove(temp_ground_truth_file_path)
@@ -333,7 +332,7 @@ def official_evaluate_by_dicts(data_name):
                 "f1": round(metrics_["answer_f1"], 3),
                 "em": round(metrics_["answer_em"], 3) if "answer_em" in metrics_ else None,
                 "count": len(id_to_predictions),
-                "acc": round(metrics_["answer_acc"], 3),
+                # "acc": round(metrics_["answer_acc"], 3),
             }
 
         os.remove(temp_ground_truth_file_path)
