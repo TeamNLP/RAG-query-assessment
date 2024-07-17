@@ -7,6 +7,10 @@ loguru
 transformers
 datasets
 rapidfuzz
+jsonlines
+ujson
+ftfy
+scipy
 
 --extra-index-url https://download.pytorch.org/whl/cu121
 torch

@@ -16,7 +16,6 @@ from lib import (
     read_jsonl,
     write_json,
     write_jsonl,
-    get_config_file_path_from_name_or_path,
 )
 from metrics.drop_answer_em_f1 import DropAnswerEmAndF1
 from metrics.support_em_f1 import SupportEmF1Metric
@@ -25,10 +24,8 @@ from metrics.squad_answer_em_f1 import SquadAnswerEmF1Metric
 
 
 # Set your path accordingly
-base_pred_path = 'predictions'
-
-if base_pred_path[-1] == "/":
-    base_pred_path = base_pred_path[:-1]
+base_pred_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "predictions")
+base_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data")
 
 
 def normalize_answer(s):
@@ -93,7 +90,7 @@ def load_predictions(prediction_file_path):
 # Save
 def save_results(results_dict, output_path):
     output_path = output_path
-    print(output_path)
+    print(f"Saved result file at `{output_path}`")
     with open(output_path, "w") as file:
         json.dump(results_dict, file, indent=4)
 
@@ -107,8 +104,8 @@ def calculate_acc(prediction, ground_truth):
 
 def evaluate_by_dicts(data_name):
     metrics = [SquadAnswerEmF1Metric()]
-    id_to_predictions = load_predictions(f"{base_pred_path}/{data_name}/{data_name}.json")
-    id_to_ground_truths = load_ground_truths(f"processed_data/{data_name}/test_subsampled.jsonl")
+    id_to_predictions = load_predictions(os.path.join(base_pred_path, data_name, "test_subsampled.json"))
+    id_to_ground_truths = load_ground_truths(os.path.join(base_data_path, data_name, "test_subsampled.jsonl"))
     total_acc = 0
 
     for id_ in set(id_to_ground_truths.keys()):
@@ -138,8 +135,8 @@ def evaluate_by_dicts(data_name):
 
 
 def official_evaluate_by_dicts(data_name):
-    id_to_predictions = load_predictions()
-    id_to_ground_truths = load_ground_truths(f"processed_data/{data_name}/test_subsampled.jsonl")
+    id_to_predictions = load_predictions(os.path.join(base_pred_path, data_name, "test_subsampled.json"))
+    id_to_ground_truths = load_ground_truths(os.path.join(base_data_path, data_name, "test_subsampled.jsonl"))
 
     question_ids = list(id_to_predictions.keys())
 
@@ -150,18 +147,19 @@ def official_evaluate_by_dicts(data_name):
             id_to_predictions[id_] = " ".join([str(e) for e in prediction])
             print("WARNING: Found a list answer prediction, concatenating it.")
 
-    os.makedirs(".temp", exist_ok=True)
+    temp_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp")
+    os.makedirs(temp_path, exist_ok=True)
 
     if data_name == "hotpotqa":
 
         # prepare ground_truth file:
-        temp_ground_truth_file_path = os.path.join(".temp", uuid.uuid4().hex)
-        original_data = read_json(os.path.join("raw_data", "hotpotqa", "hotpot_dev_distractor_v1.json"))
+        temp_ground_truth_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
+        original_data = read_json(os.path.join(os.path.dirname(os.path.realpath(__file__)), "raw_data", "hotpotqa", "hotpot_dev_distractor_v1.json"))
         filtered_data = [datum for datum in original_data if datum["_id"] in question_ids]
         write_json(filtered_data, temp_ground_truth_file_path)
 
         # prepare prediction file:
-        temp_prediction_file_path = os.path.join(".temp", uuid.uuid4().hex)
+        temp_prediction_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
         for prediction in id_to_predictions.values():
             if not isinstance(prediction, str):
                 print("WARNING: Found an answer prediction that's not a string.")
@@ -175,9 +173,9 @@ def official_evaluate_by_dicts(data_name):
         # Run the command
         temp_ground_truth_file_path = os.path.join(os.pardir, os.pardir, temp_ground_truth_file_path)
         temp_prediction_file_path = os.path.join(os.pardir, os.pardir, temp_prediction_file_path)
-        temp_output_file_path = os.path.join(os.pardir, os.pardir, ".temp", uuid.uuid4().hex)
+        temp_output_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
 
-        official_hotpotqa_evaluation_path = os.path.join("official_evaluation", "hotpotqa")
+        official_hotpotqa_evaluation_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "official_evaluation", "hotpotqa")
         command = (
             f"cd {official_hotpotqa_evaluation_path} ; "
             + f"python hotpot_evaluate_v1.py {temp_prediction_file_path} "
@@ -197,6 +195,8 @@ def official_evaluate_by_dicts(data_name):
         if not os.path.exists(temp_output_file_path):
             raise Exception("The official evaluation output file not found.")
 
+        print(temp_output_file_path)
+
         with open(temp_output_file_path, "r") as file:
             metrics_ = eval(file.read().strip())
             metrics = {
@@ -205,7 +205,7 @@ def official_evaluate_by_dicts(data_name):
                 "precision": round(metrics_["prec"], 5),
                 "recall": round(metrics_["recall"], 5),
                 "count": len(id_to_predictions),
-                'acc' : round(metrics_["acc"], 5),
+                # 'acc' : round(metrics_["acc"], 5),
             }
 
         os.remove(temp_ground_truth_file_path)
@@ -217,13 +217,13 @@ def official_evaluate_by_dicts(data_name):
 
     if data_name == "2wikimultihopqa":
         # prepare ground_truth file:
-        temp_ground_truth_file_path = os.path.join(".temp", uuid.uuid4().hex)
-        original_data = read_json(os.path.join("raw_data", "2wikimultihopqa", "dev.json"))
+        temp_ground_truth_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
+        original_data = read_json(os.path.join(os.path.dirname(os.path.realpath(__file__)), "raw_data", "2wikimultihopqa", "dev.json"))
         filtered_data = [datum for datum in original_data if datum["_id"] in question_ids]
         write_json(filtered_data, temp_ground_truth_file_path)
 
         # prepare prediction file:
-        temp_prediction_file_path = os.path.join(".temp", uuid.uuid4().hex)
+        temp_prediction_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
         for prediction in id_to_predictions.values():
             if not isinstance(prediction, str):
                 print("WARNING: Found an answer prediction that's not a string.")
@@ -239,9 +239,9 @@ def official_evaluate_by_dicts(data_name):
         temp_ground_truth_file_path = os.path.join(os.pardir, os.pardir, temp_ground_truth_file_path)
         temp_prediction_file_path = os.path.join(os.pardir, os.pardir, temp_prediction_file_path)
         alias_file_path = os.path.join(os.pardir, os.pardir, "raw_data", "2wikimultihopqa", "id_aliases.json")
-        temp_output_file_path = os.path.join(os.pardir, os.pardir, ".temp", uuid.uuid4().hex)
+        temp_output_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
 
-        evaluation_directory = os.path.join("official_evaluation", "2wikimultihopqa")
+        evaluation_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "official_evaluation", "2wikimultihopqa")
         command = (
             f"cd {evaluation_directory} ; "
             + f"python 2wikimultihop_evaluate_v1.1.py {temp_prediction_file_path} "
@@ -258,7 +258,7 @@ def official_evaluate_by_dicts(data_name):
         temp_output_file_path = temp_output_file_path.replace(os.path.join(os.pardir, os.pardir) + os.path.sep, "")
         if not os.path.exists(temp_output_file_path):
             raise Exception("The official evaluation output file not found.")
-
+        
         with open(temp_output_file_path, "r") as file:
             metrics_ = json.loads(file.read().strip())
             metrics = {
@@ -280,14 +280,14 @@ def official_evaluate_by_dicts(data_name):
     if data_name == "musique":
 
         # prepare ground_truth file:
-        temp_ground_truth_file_path = os.path.join(".temp", uuid.uuid4().hex)
-        original_data = read_jsonl(os.path.join("raw_data", "musique", "musique_ans_v1.0_dev.jsonl"))
+        temp_ground_truth_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
+        original_data = read_jsonl(os.path.join(os.path.dirname(os.path.realpath(__file__)), "raw_data", "musique", "musique_ans_v1.0_dev.jsonl"))
         original_keyed_data = {datum["id"]: datum for datum in original_data}
         filtered_data = [original_keyed_data[qid] for qid in question_ids]
         write_jsonl(filtered_data, temp_ground_truth_file_path)
 
         # prepare prediction file:
-        temp_prediction_file_path = os.path.join(".temp", uuid.uuid4().hex)
+        temp_prediction_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
         for prediction in id_to_predictions.values():
             if not isinstance(prediction, str):
                 print("WARNING: Found an answer prediction that's not a string.")
@@ -306,9 +306,9 @@ def official_evaluate_by_dicts(data_name):
         # run the command
         temp_ground_truth_file_path = os.path.join(os.pardir, os.pardir, temp_ground_truth_file_path)
         temp_prediction_file_path = os.path.join(os.pardir, os.pardir, temp_prediction_file_path)
-        temp_output_file_path = os.path.join(os.pardir, os.pardir, ".temp", uuid.uuid4().hex)
+        temp_output_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".temp", uuid.uuid4().hex)
 
-        evaluation_directory = os.path.join("official_evaluation", "musique")
+        evaluation_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "official_evaluation", "musique")
         command = (
             f"cd {evaluation_directory} ; "
             + f"python evaluate_v1.0.py {temp_prediction_file_path} {temp_ground_truth_file_path} "
@@ -345,13 +345,24 @@ def official_evaluate_by_dicts(data_name):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
+    parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
+
+    args = parser.parse_args()
+
     lst_data_name = ['musique', 'hotpotqa', '2wikimultihopqa', 'nq', 'trivia', 'squad']
 
-    for data_name in ['nq', 'trivia', 'squad']:
-        evaluate_by_dicts(data_name)
+    if args.dataset in ['nq', 'trivia', 'squad']:
+        evaluate_by_dicts(args.dataset)
+    elif args.dataset in ['musique', 'hotpotqa', '2wikimultihopqa']:
+        official_evaluate_by_dicts(args.dataset)
 
-    for data_name in ['musique', 'hotpotqa', '2wikimultihopqa']:
-        official_evaluate_by_dicts(data_name)
+    # for args.dataset in ['nq', 'trivia', 'squad']:
+    #     evaluate_by_dicts(args.dataset)
+
+    # for args.dataset in ['musique', 'hotpotqa', '2wikimultihopqa']:
+    #     official_evaluate_by_dicts(args.dataset)
 
         
 if __name__ == "__main__":
