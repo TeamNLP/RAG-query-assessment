@@ -17,10 +17,15 @@
 │   │   ├── hotpotqa
 │   │   └── musique
 │   ├── predictions
+│   │   ├── 2wikimultihopqa
+│   │   ├── hotpotqa
+│   │   ├── musique
+│   │   ├── nq
+│   │   ├── squad
+│   │   └── trivia
 │   ├── processed_data
 │   │   ├── 2wikimultihopqa
 │   │   ├── hotpotqa
-│   │   ├── iirc
 │   │   ├── musique
 │   │   ├── nq
 │   │   ├── squad
@@ -29,7 +34,6 @@
 │   └── raw_data
 │       ├── 2wikimultihopqa
 │       ├── hotpotqa
-│       ├── iirc
 │       ├── musique
 │       ├── nq
 │       ├── squad
