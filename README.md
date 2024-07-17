@@ -45,16 +45,16 @@
 
 ## Installation
 ```bash
-sh scripts/env_reproduction.sh
+sh scripts/env_setup.sh
 ```
 
 ## Usage
 
 ### Classifier
 ```bash
-sh scripts/evaluation_for_labeling.sh
-sh scripts/ft_dataset_labeling.sh
-sh scripts/fine_tuning_classifier.sh
+sh scripts/CRAG_evaluate_for_labeling.sh
+sh scripts/label_ft_dataset.sh
+sh scripts/fine_tune_classifier.sh
 ```
 
 ### Rewriter
@@ -64,5 +64,5 @@ sh scripts/fine_tuning_classifier.sh
 ```bash
 sh scripts/experimental_setup.sh
 sh scripts/predict.sh
-sh scripts/evaluate_prediction.sh
+sh scripts/evaluate_RAG_predictions.sh
 ```
