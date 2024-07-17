@@ -5,6 +5,8 @@ experiments/raw_data/*
 !experiments/raw_data/.gitkeep
 experiments/processed_data/*
 !experiments/processed_data/.gitkeep
+experiments/predictions/*
+!experiments/predictions/.gitkeep
 .temp/
 
 evaluation/official_evaluation/2wikimultihopqa/*

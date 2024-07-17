@@ -24,16 +24,16 @@ mkdir -p experiments/raw_data/musique
 gdown "1tGdADlNjWFaHLeZZGShh2IRcpO6Lv24h&confirm=t" -O .temp/musique_v1.0.zip
 unzip -jo .temp/musique_v1.0.zip -d experiments/raw_data/musique -x "*.DS_Store"
 
-echo "\n\nDownloading raw iirc data\n"
-mkdir -p experiments/raw_data/iirc
-wget https://iirc-dataset.s3.us-west-2.amazonaws.com/iirc_train_dev.tgz -O .temp/iirc_train_dev.tgz
-tar -xzvf .temp/iirc_train_dev.tgz -C .temp/
-mv .temp/iirc_train_dev/train.json experiments/raw_data/iirc/train.json
-mv .temp/iirc_train_dev/dev.json experiments/raw_data/iirc/dev.json
+# echo "\n\nDownloading raw iirc data\n"
+# mkdir -p experiments/raw_data/iirc
+# wget https://iirc-dataset.s3.us-west-2.amazonaws.com/iirc_train_dev.tgz -O .temp/iirc_train_dev.tgz
+# tar -xzvf .temp/iirc_train_dev.tgz -C .temp/
+# mv .temp/iirc_train_dev/train.json experiments/raw_data/iirc/train.json
+# mv .temp/iirc_train_dev/dev.json experiments/raw_data/iirc/dev.json
 
-echo "\n\nDownloading iirc wikipedia corpus (this will take 2-3 mins)\n"
-wget https://iirc-dataset.s3.us-west-2.amazonaws.com/context_articles.tar.gz -O .temp/context_articles.tar.gz
-tar -xzvf .temp/context_articles.tar.gz -C experiments/raw_data/iirc
+# echo "\n\nDownloading iirc wikipedia corpus (this will take 2-3 mins)\n"
+# wget https://iirc-dataset.s3.us-west-2.amazonaws.com/context_articles.tar.gz -O .temp/context_articles.tar.gz
+# tar -xzvf .temp/context_articles.tar.gz -C experiments/raw_data/iirc
 
 echo "\n\nDownloading hotpotqa wikipedia corpus (this will take ~5 mins)\n"
 wget https://nlp.stanford.edu/projects/hotpotqa/enwiki-20171001-pages-meta-current-withlinks-abstracts.tar.bz2 -O .temp/wikpedia-paragraphs.tar.bz2

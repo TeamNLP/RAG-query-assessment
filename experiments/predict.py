@@ -1,123 +1,243 @@
-"""
-Reference
-https://github.com/starsuzi/Adaptive-RAG/blob/main/predict.py
-"""
-
-import os
-import shutil
-import subprocess
 import argparse
+import json
+import os
+import requests
+from typing import List, Tuple, Dict, Optional
 
-from lib import (
-    get_retriever_address,
-    get_llm_server_address,
-    infer_source_target_prefix,
-    get_config_file_path_from_name_or_path,
+import dotenv
+import torch
+from lib import read_jsonl, write_json
+from openai import OpenAI
+from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_SUFFIX
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    pipeline,
 )
+from tqdm import tqdm
+
+CORPUS_NAME_DICT = {
+    "hotpotqa":"hotpotqa",
+    "2wikimultihopqa":"2wikimultihopqa",
+    "musique":"musique",
+    'nq':'wiki',
+    'trivia':'wiki',
+    'squad':'wiki'
+}
+
+dotenv.load_dotenv()
+api_key = os.environ.get('OPENAI_API_KEY')
+
+client = OpenAI(api_key=api_key)
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--retrieval_corpus_name', type=str, default=None, required=False, help="`corpus_name` for ElasticSearch Retriever")
+parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_url` for ElasticSearch Retriever")
+parser.add_argument('--retrieval_top_n', type=int, default=3, help="A number for how many results to retrieve")
+parser.add_argument('--generator_model_name', type=str, required=True, help="`model_name` for Generator")
+parser.add_argument('--load_generator_in_4bit', action="store_true", help="whether load generator in 4bit. Only for HuggingFace models.")
+parser.add_argument('--generator_max_new_tokens', type=int, default=32, help="`max_new_tokens` for generator. Only for HuggingFace models.")
+parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
+parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
+parser.add_argument('--debug', action="store_true", help="whether use debug mode")
+
+args = parser.parse_args()
 
 
-def get_git_hash() -> str:
-    return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
+class Retriever:
+    def __init__(self, corpus_name, top_n=3, method="retrieve_from_elasticsearch", api_url="http://localhost:8000/"):
+        assert method == "retrieve_from_elasticsearch"
 
-
-def main():
-    parser = argparse.ArgumentParser(description="Run configurable_inference on given config and dataset.")
-    parser.add_argument("experiment_name_or_path", type=str, help="experiment_name_or_path")
-    parser.add_argument("evaluation_path", type=str, help="evaluation_path")
-    parser.add_argument(
-        "--prediction-suffix", type=str, help="optional suffix for the prediction directory.", default=""
-    )
-    parser.add_argument("--dry-run", action="store_true", default=False, help="dry-run")
-    parser.add_argument("--skip-evaluation", type=str, default="", help="skip-evaluation")
-    parser.add_argument("--force", action="store_true", default=False, help="force predict if it exists")
-    parser.add_argument(
-        "--variable-replacements",
-        type=str,
-        help="json string for jsonnet local variable replacements.",
-        default="",
-    )
-    parser.add_argument("--silent", action="store_true", help="silent")
-    parser.add_argument('--set_name', type=str, help="set_name", required=True)
-    # TODO
-    # llm_port_num
-    parser.add_argument(
-        '--llm_port_num', type=str, help="llm_port_num", required=True
-    )
-    args = parser.parse_args()
-
-    config_filepath = get_config_file_path_from_name_or_path(args.experiment_name_or_path)
-    experiment_name = os.path.splitext(os.path.basename(config_filepath))[0]
-    prediction_directory = os.path.join("predictions", args.set_name, experiment_name + args.prediction_suffix)
-
-    os.makedirs(prediction_directory, exist_ok=True)
-
-    prediction_filename = os.path.splitext(os.path.basename(args.evaluation_path))[0]
-    prediction_filename = infer_source_target_prefix(config_filepath, args.evaluation_path) + prediction_filename
-    prediction_filepath = os.path.join(prediction_directory, "prediction__" + prediction_filename + ".json")
-
-    if os.path.exists(prediction_filepath) and not args.force:
-        from run import is_experiment_complete
-
-        metrics_file_path = os.path.join(prediction_directory, "evaluation_metrics__" + prediction_filename + ".json")
-        if is_experiment_complete(config_filepath, prediction_filepath, metrics_file_path, args.variable_replacements):
-            exit(f"The prediction_file_path {prediction_filepath} already exists and is complete. Pass --force.")
-
-    env_variables = {}
-    retriever_address = get_retriever_address()
-    env_variables["RETRIEVER_HOST"] = str(retriever_address["host"])
-    env_variables["RETRIEVER_PORT"] = str(retriever_address["port"])
-    llm_server_address = get_llm_server_address(args.llm_port_num)
-    env_variables["LLM_SERVER_HOST"] = str(llm_server_address["host"])
-    env_variables["LLM_SERVER_PORT"] = str(llm_server_address["port"])
-
-    env_variables_str = " ".join([f"{key}={value}" for key, value in env_variables.items()]).strip()
-
-    predict_command = " ".join(
-        [
-            env_variables_str,
-            "python -m commaqa.inference.configurable_inference",
-            f"--config {config_filepath}",
-            f"--input {args.evaluation_path}",
-            f"--output {prediction_filepath}",
-        ]
-    ).strip()
-
-    if args.silent:
-        predict_command += " --silent"
-
-    if args.variable_replacements:
-        predict_command += f" --variable-replacements '{args.variable_replacements}'"
-
-    print(f"Run predict_command: \n{predict_command}\n")
-
-    if not args.dry_run:
-        subprocess.call(predict_command, shell=True)
-
-    # To be able to reproduce the same result:
-    git_hash_filepath = os.path.join(prediction_directory, "git_hash__" + prediction_filename + ".txt")
-
-    # Again for reproducibility:
-    backup_config_filepath = os.path.join(prediction_directory, "config__" + prediction_filename + ".jsonnet")
-    shutil.copyfile(config_filepath, backup_config_filepath)
-
-    if not args.skip_evaluation:
+        self.corpus_name = corpus_name
+        self.top_n = top_n
+        self.api_url = api_url
         
-        evaluate_command = " ".join(["python evaluate.py", str(config_filepath), str(args.evaluation_path), '--set_name', args.set_name, '--llm_port_num', args.llm_port_num]).strip()
+    def retrieve(
+        self, 
+        query: str
+    ) -> Tuple[List[Dict], float]:
+        payload = {
+            "query_text": query,
+            "retrieval_method": "retrieve_from_elasticsearch",
+            "max_hits_count": self.top_n,
+            "corpus_name": self.corpus_name,
+        }
 
-        print(f"Run evaluate_command: \n{evaluate_command}\n")
+        response = requests.post(self.api_url, json=payload)
 
-        if not args.dry_run:
-            subprocess.call(evaluate_command, shell=True)
+        if response.status_code == 200:
+            results = response.json()
+            retrieval_results = results['retrieval']
+            retrieval_time = results['time_in_seconds']
+            return retrieval_results, retrieval_time
+        else:
+            raise Exception(f"Retriever Request Failed! (Status Code: {response.status_code}, Text: {response.text})")
+
+    def get_passages(
+        self,
+        retrieval_results: List[Dict],
+    ) -> str:
+        passage_list = [result["paragraph_text"] for result in retrieval_results]
+        passages = "\n".join(passage_list)
+        return passages
+
+
+class Generator:
+    def __init__(self, model_name, load_in_4bit=False, max_new_tokens=32):
+        self.model_name = model_name
+        if "gpt-3.5" in self.model_name.lower() or "gpt-4" in self.model_name.lower():
+            self.use_hf = False
+            self.model=self.model_name
+        else: # Load models at HuggingFace Hub
+            self.use_hf = True 
+
+            # Load the tokenizer for the specified model.
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+
+            if load_in_4bit:
+                # Load the large language model with the specified quantization configuration.
+                bnb_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_use_double_quant=False,
+                )
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    device_map="auto",
+                    quantization_config=bnb_config,
+                    torch_dtype=torch.float16,
+                )
+
+            else:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    device_map="auto",
+                    torch_dtype=torch.float16,
+                )
+            
+            # Initialize a text generation pipeline with the loaded model and tokenizer.
+            self.generation_pipe = pipeline(
+                task="text-generation",
+                model=self.model,
+                tokenizer=self.tokenizer,
+                max_new_tokens=max_new_tokens,
+            )
         
-        evaluate_command = " ".join(
-            ["python evaluate.py", str(config_filepath), str(args.evaluation_path), "--official", '--set_name', args.set_name, '--llm_port_num', args.llm_port_num]
-        ).strip()
+        self.system_prompt = RAG_SYS_PROMPT
+        self.prompt_template = RAG_PROMPT_TEMPLATE
+        self.template_suffix = RAG_PROMPT_TEMPLATE_SUFFIX
 
-        print(f"Run evaluate_command: \n{evaluate_command}\n")
+    def make_rag_prompt(
+        self,
+        query: str, 
+        passages: str
+    ) -> str:
+        return self.prompt_template.format(query=query, passages=passages)
 
-        if not args.dry_run:
-            subprocess.call(evaluate_command, shell=True)
+    def generate_response(
+        self, 
+        query: str, 
+        passages: str
+    ) -> Optional[str]:
+        input_prompt = self.make_rag_prompt(query, passages)
+
+        if self.use_hf: # Load models at HuggingFace Hub
+            response = self.generation_pipe(input_prompt)
+            output = response[0]["generated_text"].split(self.template_suffix)[-1].strip()
+            return output
+
+        else: # Use OpenAI API
+            try:
+                response = client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": self.system_prompt},
+                        {"role": "user", "content": input_prompt},
+                    ],
+                    temperature=1,
+                )
+                output = response.choices[0].message.content.strip()
+                return output
+
+            except Exception as e:
+                print(e)
+                return None
+
+
+class RAGFramework:
+    def __init__(self, retriever, generator):
+        self.retriever = retriever
+        self.generator = generator
+
+    def run(self, query, debug=False):
+        retrieval_results, retrieval_time = self.retriever.retrieve(query)
+        retrieved_passages = self.retriever.get_passages(retrieval_results)
+        if debug: print("\nRetrieved passages: ", retrieved_passages)
+        
+        input_prompt = self.generator.make_rag_prompt(query, retrieved_passages)
+        if debug: print("\nInput prompt: ", input_prompt)
+        
+        # Generate Response
+        response = self.generator.generate_response(
+            query=query, 
+            passages=retrieved_passages
+        )
+        
+        if debug: print("Generated response: ", response)
+        
+        return response
+
+
+def make_rag(args):
+    retriever = Retriever(
+        corpus_name=args.retrieval_corpus_name, 
+        top_n=args.retrieval_top_n, 
+        api_url=args.retriever_api_url
+    )
+    generator = Generator(
+        model_name=args.generator_model_name, 
+        load_in_4bit=args.load_generator_in_4bit, 
+        max_new_tokens=args.generator_max_new_tokens
+    )
+
+    # RAG framework 
+    rag = RAGFramework(retriever, generator)
+    return rag
+
+
+def main(args):
+    if args.retriever_api_url is None:
+        try:
+            args.retriever_api_url = os.environ.get('RETRIEVER_API_URL')
+        except KeyError:
+            raise KeyError("`retriever_api_url` required!")
+    
+    if args.retrieval_corpus_name is None:
+        args.retrieval_corpus_name = CORPUS_NAME_DICT[args.dataset]        
+
+    rag = make_rag(args)
+
+    input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data", args.dataset)
+    input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
+    input_instance = read_jsonl(input_filepath)
+
+    output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "predictions", args.dataset)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    output_filepath = os.path.join(output_directory, f"{args.dataset_type}.json")
+    output_instance = {}
+    
+    for datum in tqdm(input_instance, desc=f"Run RAG on {args.dataset_type}.jsonl of {args.dataset}"):
+        question_id = datum["question_id"]
+        question_text = datum["question_text"]
+
+        response = rag.run(query=question_text, debug=args.debug)
+        output_instance[question_id] = response
+
+    write_json(output_instance, output_filepath)
 
 
 if __name__ == "__main__":
-    main()
+    main(args)
