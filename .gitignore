@@ -4,7 +4,8 @@ classifier/model/
 experiments/raw_data/*
 !experiments/raw_data/.gitkeep
 experiments/processed_data/*
-!experiments/processed_data/.gitkeep
+!experiments/processed_data/README.md
+!experiments/processed_data/sample.jsonl
 experiments/predictions/*
 !experiments/predictions/.gitkeep
 .temp/
