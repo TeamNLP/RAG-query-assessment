@@ -1,0 +1,2 @@
+[`sample.jsonl`](sample.jsonl) is constructed by randomly selecting 2 samples from the devset of the benchmark dataset. <br>
+Each data sample is listed in alphabetical order (*2wikimultihopqa, hotpotqa, musique, nq, squad, trivia*). (i.e., the first and second samples in [`sample.jsonl`](sample.jsonl) are data from *2wikimultihopqa*)
