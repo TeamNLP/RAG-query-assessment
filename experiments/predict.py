@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict, Optional
 
 import dotenv
 import torch
-from lib import read_jsonl, write_json
+from lib import read_jsonl, write_json, load_data
 from openai import OpenAI
 from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_SUFFIX
 from transformers import (
@@ -44,6 +44,7 @@ parser.add_argument('--do_sample', action="store_true", help="whether use sampli
 parser.add_argument('--temperature', type=float, default=1.0, help="")
 parser.add_argument('--top_k', type=int, default=50, help="")
 parser.add_argument('--top_p', type=float, default=1.0, help="")
+parser.add_argument('--batch_size', type=int, default=2, help="batch size")
 parser.add_argument('--debug', action="store_true", help="whether use debug mode")
 
 args = parser.parse_args()
@@ -95,11 +96,12 @@ class Generator:
         self.temperature = generator_config["temperature"]
         self.top_k = generator_config["top_k"]
         self.top_p = generator_config["top_p"]
+        self.batch_size = generator_config["batch_size"]
 
         self.model_name = model_name
         if "gpt-3.5" in self.model_name.lower() or "gpt-4" in self.model_name.lower():
             self.use_hf = False
-            self.model=self.model_name
+            self.model = self.model_name
         else: # Load models at HuggingFace Hub
             self.use_hf = True 
 
@@ -229,7 +231,8 @@ def make_rag(args):
             "do_sample": args.do_sample,
             "temperature": args.temperature,
             "top_k": args.top_k,
-            "top_p": args.top_p
+            "top_p": args.top_p,
+            "batch_size": args.batch_size
         },
         load_in_4bit=args.load_generator_in_4bit, 
     )
@@ -254,6 +257,7 @@ def main(args):
     input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data", args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
     input_instance = read_jsonl(input_filepath)
+    # dataset = load_data(input_filepath)
 
     output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "predictions", args.dataset)
     if not os.path.exists(output_directory):
