@@ -257,7 +257,7 @@ def main(args):
     input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data", args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
     input_instance = read_jsonl(input_filepath)
-    # dataset = load_data(input_filepath)
+    dataset = load_data(input_filepath)
 
     output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "predictions", args.dataset)
     if not os.path.exists(output_directory):

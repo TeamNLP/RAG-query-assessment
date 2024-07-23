@@ -5,6 +5,13 @@ from typing import List, Dict
 
 # import _jsonnet
 # import requests
+from datasets import load_dataset
+
+
+def load_data(input_filepath):
+    dataset = load_dataset("json", data_files=input_filepath)
+    return dataset
+
 
 def read_json(file_path: str) -> Dict:
     with open(file_path, "r", encoding="utf8", errors='ignore') as file:
