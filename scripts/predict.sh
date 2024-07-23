@@ -6,5 +6,5 @@ do
         --dataset $dataset \
         --dataset_type test_subsampled \
         --retrieval_top_n 3 \
-        --generator_model_name google/gemma-1.1-2b-it
+        --generator_model_name meta-llama/Meta-Llama-3-8B
 done
