@@ -39,7 +39,6 @@
 │       ├── squad
 │       ├── trivia
 │       └── wiki
-├── rewriter
 └── scripts
 ```
 
