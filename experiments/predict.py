@@ -37,7 +37,7 @@ parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_ur
 parser.add_argument('--retrieval_top_n', type=int, default=3, help="A number for how many results to retrieve")
 parser.add_argument('--generator_model_name', type=str, required=True, help="`model_name` for Generator")
 parser.add_argument('--load_generator_in_4bit', action="store_true", help="whether load generator in 4bit. Only for HuggingFace models.")
-parser.add_argument('--generator_max_new_tokens', type=int, default=32, help="`max_new_tokens` for generator. Only for HuggingFace models.")
+parser.add_argument('--generator_max_new_tokens', type=int, default=32, help="`max_new_tokens` for generator.")
 parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
 parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
 parser.add_argument('--debug', action="store_true", help="whether use debug mode")
@@ -157,6 +157,7 @@ class Generator:
                         {"role": "user", "content": input_prompt},
                     ],
                     temperature=1,
+                    max_tokens=args.generator_max_new_tokens
                 )
                 output = response.choices[0].message.content.strip()
                 return output
