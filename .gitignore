@@ -1,6 +1,7 @@
 api_responses/
 data
 classifier/model/
+experiments/evaluation_results.csv
 experiments/raw_data/*
 !experiments/raw_data/.gitkeep
 experiments/processed_data/*

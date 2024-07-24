@@ -11,3 +11,5 @@ do
             --dataset_type test_subsampled
     done
 done
+
+python experiments/extract_evaluation_results.py
