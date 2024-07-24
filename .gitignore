@@ -8,6 +8,8 @@ experiments/processed_data/*
 !experiments/processed_data/sample.jsonl
 experiments/predictions/*
 !experiments/predictions/.gitkeep
+experiments/predictions*
+
 .temp/
 
 evaluation/official_evaluation/2wikimultihopqa/*

@@ -32,6 +32,7 @@ api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key)
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--output_directory', type=str, default="predictions", help="`output_directory` to store the prediction results")
 parser.add_argument('--retrieval_corpus_name', type=str, default=None, required=False, help="`corpus_name` for ElasticSearch Retriever")
 parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_url` for ElasticSearch Retriever")
 parser.add_argument('--retrieval_top_n', type=int, default=3, help="A number for how many results to retrieve")
@@ -259,7 +260,7 @@ def main(args):
     input_instance = read_jsonl(input_filepath)
     dataset = load_data(input_filepath)
 
-    output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "predictions", args.dataset)
+    output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.output_directory, args.dataset)
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     output_filepath = os.path.join(output_directory, f"{args.dataset_type}.json")
