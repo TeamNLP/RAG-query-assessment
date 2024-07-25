@@ -10,6 +10,8 @@ experiments/processed_data/*
 experiments/predictions/*
 !experiments/predictions/.gitkeep
 experiments/predictions*
+experiments/rewritten_data/*
+!experiments/rewritten_data/.gitkeep
 
 .temp/
 
