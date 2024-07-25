@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict, Optional
 
 import dotenv
 import torch
-from lib import read_jsonl, write_json, load_data
+from lib import read_jsonl, write_json
 from openai import OpenAI
 from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_SUFFIX
 from transformers import (
@@ -153,7 +153,7 @@ class Generator:
         query: str, 
         passages: str
     ) -> str:
-        return self.prompt_template.format(query=query, passages=passages)
+        return self.prompt_template.format(instruction=self.system_prompt, query=query, passages=passages)
 
     def generate_response(
         self, 
@@ -258,7 +258,6 @@ def main(args):
     input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data", args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
     input_instance = read_jsonl(input_filepath)
-    dataset = load_data(input_filepath)
 
     output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.output_directory, args.dataset)
     if not os.path.exists(output_directory):
