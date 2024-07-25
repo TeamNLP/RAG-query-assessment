@@ -44,6 +44,8 @@
 
 ## Installation
 ```bash
+conda create -n qwer python=3.9
+conda activate qwer
 sh scripts/env_setup.sh
 ```
 
