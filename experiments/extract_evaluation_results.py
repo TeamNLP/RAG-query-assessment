@@ -1,13 +1,20 @@
+import argparse
 import os
 import json
 import csv
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--output_directory_prefix', type=str, default="predictions", help="prefix of output_directory where prediction results are located")
+
+args = parser.parse_args()
+
 def extract_metrics(directories):
     # Define the subdirectories to look for the JSON files
-    subdirs = ["nq", "squad", "trivia", "2wikimultihopqa", "hotpotqa", "musique"]
+    subdirs = ["nq", "trivia"]
+    # subdirs = ["nq", "squad", "trivia", "2wikimultihopqa", "hotpotqa", "musique"]
     
     # Prepare the CSV file
-    output_csv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'evaluation_results.csv')
+    output_csv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), f'{args.output_directory_prefix}_evaluation_results.csv')
     with open(output_csv_path, 'w', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
         # Write the header
@@ -38,10 +45,10 @@ def extract_metrics(directories):
 
 # Example usage
 directories = [
-    'predictions_Meta-Llama-3-8B',
-    'predictions_Meta-Llama-3-8B-Instruct',
-    'predictions_Meta-Llama-3.1-8B',
-    'predictions_Meta-Llama-3.1-8B-Instruct',
+    f'{args.output_directory_prefix}_Meta-Llama-3-8B',
+    f'{args.output_directory_prefix}_Meta-Llama-3-8B-Instruct',
+    f'{args.output_directory_prefix}_Meta-Llama-3.1-8B',
+    f'{args.output_directory_prefix}_Meta-Llama-3.1-8B-Instruct',
 ]
 
 extract_metrics(directories)
