@@ -23,8 +23,15 @@ from metrics.answer_support_recall import AnswerSupportRecallMetric
 from metrics.squad_answer_em_f1 import SquadAnswerEmF1Metric
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
+parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
+parser.add_argument('--input_directory', type=str, default="predictions", help="`input_directory` to evaluate the prediction results")
+
+args = parser.parse_args()
+
 # Set your path accordingly
-base_pred_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "predictions")
+base_pred_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.input_directory)
 base_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data")
 
 
@@ -102,10 +109,10 @@ def calculate_acc(prediction, ground_truth):
     return 0
 
 
-def evaluate_by_dicts(data_name):
+def evaluate_by_dicts(data_name, dataset_type):
     metrics = [SquadAnswerEmF1Metric()]
-    id_to_predictions = load_predictions(os.path.join(base_pred_path, data_name, "test_subsampled.json"))
-    id_to_ground_truths = load_ground_truths(os.path.join(base_data_path, data_name, "test_subsampled.jsonl"))
+    id_to_predictions = load_predictions(os.path.join(base_pred_path, data_name, f"prediction_{dataset_type}.json"))
+    id_to_ground_truths = load_ground_truths(os.path.join(base_data_path, data_name, f"{dataset_type}.jsonl"))
     total_acc = 0
 
     for id_ in set(id_to_ground_truths.keys()):
@@ -114,10 +121,11 @@ def evaluate_by_dicts(data_name):
 
         assert isinstance(prediction, (str, list))
         if isinstance(prediction, str):
-            if prediction.strip().startswith("[") or prediction.strip().endswith("]"):
-                prediction = [e for e in prediction.replace('"', "").replace("[", "").replace("]", "").split(",")]
-            else:
-                prediction = [prediction]
+            # if prediction.strip().startswith("[") or prediction.strip().endswith("]"):
+            #     prediction = [e for e in prediction.replace('"', "").replace("[", "").replace("]", "").split(",")]
+            # else:
+            #     prediction = [prediction]
+            prediction = [prediction]
 
         assert isinstance(prediction, (list, tuple))
         prediction = [str(e) for e in prediction]
@@ -125,7 +133,7 @@ def evaluate_by_dicts(data_name):
 
         acc = calculate_acc(normalize_answer(prediction[0]), [normalize_answer(i) for i in ground_truth])
         total_acc = total_acc + acc
-        assert len(prediction) == 1
+        assert len(prediction) == 1, f"len(prediction) == {len(prediction)}, prediction: {prediction}"
         metrics[0](prediction[0], ground_truth)
         
     total_acc = total_acc / len(id_to_predictions)
@@ -135,9 +143,9 @@ def evaluate_by_dicts(data_name):
     save_results(evaluation_results, f"{base_pred_path}/{data_name}/eval_metic_result_acc.json")
 
 
-def official_evaluate_by_dicts(data_name):
-    id_to_predictions = load_predictions(os.path.join(base_pred_path, data_name, "test_subsampled.json"))
-    id_to_ground_truths = load_ground_truths(os.path.join(base_data_path, data_name, "test_subsampled.jsonl"))
+def official_evaluate_by_dicts(data_name, dataset_type):
+    id_to_predictions = load_predictions(os.path.join(base_pred_path, data_name, f"prediction_{dataset_type}.json"))
+    id_to_ground_truths = load_ground_truths(os.path.join(base_data_path, data_name, f"{dataset_type}.jsonl"))
 
     question_ids = list(id_to_predictions.keys())
 
@@ -344,24 +352,12 @@ def official_evaluate_by_dicts(data_name):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
-    parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
-
-    args = parser.parse_args()
-
-    lst_data_name = ['musique', 'hotpotqa', '2wikimultihopqa', 'nq', 'trivia', 'squad']
+    # lst_data_name = ['musique', 'hotpotqa', '2wikimultihopqa', 'nq', 'trivia', 'squad']
 
     if args.dataset in ['nq', 'trivia', 'squad']:
-        evaluate_by_dicts(args.dataset)
+        evaluate_by_dicts(args.dataset, args.dataset_type)
     elif args.dataset in ['musique', 'hotpotqa', '2wikimultihopqa']:
-        official_evaluate_by_dicts(args.dataset)
-
-    # for args.dataset in ['nq', 'trivia', 'squad']:
-    #     evaluate_by_dicts(args.dataset)
-
-    # for args.dataset in ['musique', 'hotpotqa', '2wikimultihopqa']:
-    #     official_evaluate_by_dicts(args.dataset)
+        official_evaluate_by_dicts(args.dataset, args.dataset_type)
 
         
 if __name__ == "__main__":

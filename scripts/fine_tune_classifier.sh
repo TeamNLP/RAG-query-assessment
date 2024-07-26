@@ -23,7 +23,7 @@ python classifier/fine-tuning/run.py \
     --per_device_eval_batch_size 8 \
     --learning_rate 3e-4 \
     --save_strategy "epoch" \
-    --save_total_limit 2 \
-    --push_to_hub \
-    --hub_model_id ${REPOSITORY_ID} \
-    --hub_token ${HUGGINGFACE_TOKEN}
+    --save_total_limit 2 
+    # --push_to_hub \
+    # --hub_model_id ${REPOSITORY_ID} \
+    # --hub_token ${HUGGINGFACE_TOKEN}
