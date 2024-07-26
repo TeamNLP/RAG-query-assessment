@@ -31,14 +31,14 @@
 │   │   ├── squad
 │   │   └── trivia
 │   ├── processing
-│   └── raw_data
-│       ├── 2wikimultihopqa
-│       ├── hotpotqa
-│       ├── musique
-│       ├── nq
-│       ├── squad
-│       ├── trivia
-│       └── wiki
+│   ├── raw_data
+│   │   ├── 2wikimultihopqa
+│   │   ├── hotpotqa
+│   │   ├── musique
+│   │   ├── nq
+│   │   ├── squad
+│   │   └── trivia
+│   └── rewritten_data
 └── scripts
 ```
 
@@ -59,6 +59,9 @@ sh scripts/fine_tune_classifier.sh
 ```
 
 ### Rewriter
+```bash
+sh scripts/query_rewirte.sh
+```
 
 ### Experiments
 
