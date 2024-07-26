@@ -6,8 +6,8 @@ do
     # for dataset in hotpotqa 2wikimultihopqa musique nq trivia squad
     do
         echo "model_path: $model_path, dataset: $dataset"
-        python experiments/predict_vllm.py \
-            --output_directory "predictions_$model_suffix" \
+        python experiments/predict_vllm_wo.py \
+            --output_directory "predictions_wo_$model_suffix" \
             --dataset $dataset \
             --dataset_type test_subsampled \
             --retrieval_top_n 3 \

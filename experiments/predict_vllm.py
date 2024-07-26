@@ -8,8 +8,9 @@ import dotenv
 import torch
 import vllm
 from lib import read_jsonl, write_json
+from loguru import logger
 from openai import OpenAI
-from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_SUFFIX
+from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_WO_INST, RAG_PROMPT_TEMPLATE_SUFFIX
 from tqdm import tqdm
 
 CORPUS_NAME_DICT = {
@@ -27,6 +28,7 @@ api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key)
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--input_directory', type=str, default="processed_data", help="`input_directory` to predict results")
 parser.add_argument('--output_directory', type=str, default="predictions", help="`output_directory` to store the prediction results")
 parser.add_argument('--retrieval_corpus_name', type=str, default=None, required=False, help="`corpus_name` for ElasticSearch Retriever")
 parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_url` for ElasticSearch Retriever")
@@ -43,6 +45,8 @@ parser.add_argument('--vllm_tensor_parallel_size', type=int, default=1, help="TU
 parser.add_argument('--vllm_gpu_memory_utilization', type=float, default=0.9, help="TUNE THIS VARIABLE depending on the number of GPUs you are requesting and the size of your model.")
 parser.add_argument('--vllm_dtype', type=str, default="auto", help="Data type for model weights and activations. Possible choices: auto, half, float16, bfloat16, float, float32")
 parser.add_argument('--batch_size', type=int, default=1, help="batch size")
+parser.add_argument('--use_chat_template', action="store_true", help="whether use chat template")
+parser.add_argument('--use_template_wo_instruction', action="store_true", help="whether use prompt template without instruction")
 parser.add_argument('--debug', action="store_true", help="whether use debug mode")
 
 args = parser.parse_args()
@@ -96,6 +100,7 @@ class Retriever:
 class Generator:
     def __init__(self, model_name, generator_config):
         self.generator_config = generator_config
+        self.use_chat_template = generator_config["use_chat_template"]
         self.max_new_tokens = generator_config["max_new_tokens"]
         self.do_sample = generator_config["do_sample"]
         self.temperature = generator_config["temperature"]
@@ -124,6 +129,7 @@ class Generator:
         
         self.system_prompt = RAG_SYS_PROMPT
         self.prompt_template = RAG_PROMPT_TEMPLATE
+        self.prompt_template_without_instruction = RAG_PROMPT_TEMPLATE_WO_INST
         self.template_suffix = RAG_PROMPT_TEMPLATE_SUFFIX
 
     def make_rag_prompt(
@@ -131,8 +137,21 @@ class Generator:
         query: str, 
         passages: str
     ) -> str:
-
-        return self.prompt_template.format(instruction=RAG_SYS_PROMPT, query=query, passages=passages)
+        if self.use_chat_template:
+            # Formats queries and retrieval results using the chat_template of the model.
+            return self.tokenizer.apply_chat_template(
+                    [
+                        {"role": "system", "content": RAG_SYS_PROMPT},
+                        {"role": "user", "content": self.prompt_template_without_instruction.format(query=query, passages=passages)},
+                    ],
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+        else:
+            if args.use_template_wo_instruction:
+                return self.prompt_template_without_instruction.format(query=query, passages=passages)
+            else:
+                return self.prompt_template.format(instruction=RAG_SYS_PROMPT, query=query, passages=passages)
 
     def make_rag_prompts(
         self,
@@ -140,8 +159,6 @@ class Generator:
         batch_passages: List[str] = []
     ) -> List[str]:
         """
-        Formats queries and retrieval results using the chat_template of the model.
-            
         Parameters:
         - queries (List[str]): A list of queries to be formatted into prompts.
         - batch_passages (List[str])
@@ -249,8 +266,7 @@ class RAGFramework:
                 top_k=self.generator.top_k,
                 temperature=self.generator.temperature,  # Randomness of the sampling
                 skip_special_tokens=True,  # Whether to skip special tokens in the output.
-                # stop_token_ids=[self.generator.tokenizer.eos_token_id, self.generator.tokenizer.convert_tokens_to_ids("<|eot_id|>")],
-                stop_token_ids=[self.generator.tokenizer.eos_token_id, self.generator.tokenizer.convert_tokens_to_ids("<|eot_id|>"), self.generator.tokenizer.convert_tokens_to_ids("<|im_end|>")],
+                stop_token_ids=[self.generator.tokenizer.eos_token_id, self.generator.tokenizer.convert_tokens_to_ids("<|eot_id|>")],
                 max_tokens=self.generator.max_new_tokens  # Maximum number of tokens to generate per output sequence.
             ),
             use_tqdm=False # you might consider setting this to True during local development
@@ -273,6 +289,7 @@ def make_rag(args):
     generator = Generator(
         model_name=args.generator_model_name, 
         generator_config={
+            "use_chat_template":args.use_chat_template,
             "max_new_tokens":args.generator_max_new_tokens,
             "do_sample": args.do_sample,
             "temperature": args.temperature,
@@ -344,9 +361,7 @@ def generate_predictions(dataset_path, rag_model, batch_size=2):
     """
     question_ids, queries, predictions = [], [], []
 
-
     for batch in tqdm(load_data_in_batches(dataset_path, batch_size), desc=f"Generating predictions on {dataset_path}"):
-        
         batch_predictions = rag_model.batch_generate_prediction(batch)
         
         question_ids.extend(batch["question_id"])
@@ -368,7 +383,7 @@ def main(args):
 
     rag = make_rag(args)
 
-    input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data", args.dataset)
+    input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.input_directory, args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
     # input_instance = read_jsonl(input_filepath)
 
