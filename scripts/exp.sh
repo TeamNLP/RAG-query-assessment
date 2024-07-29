@@ -1,2 +1,0 @@
-sh scripts/predict_rewrite_vllm.sh
-sh scripts/evaluate_RAG_vLLM_rewrite_predictions.sh
