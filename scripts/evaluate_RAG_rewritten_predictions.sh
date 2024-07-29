@@ -2,7 +2,7 @@
 
 for rewrite_method in method1 method2 method3 method4 method5
 do
-    for output_directory_prefix in "$rewrite_method"_predictions_wo "$rewrite_method"_predictions_chat
+    for output_directory_prefix in "$rewrite_method"_predictions "$rewrite_method"_predictions_wo "$rewrite_method"_predictions_chat
     do
         for model_path in meta-llama/Meta-Llama-3.1-8B meta-llama/Meta-Llama-3.1-8B-Instruct meta-llama/Meta-Llama-3-8B meta-llama/Meta-Llama-3-8B-Instruct
         do

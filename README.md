@@ -67,6 +67,6 @@ sh scripts/query_rewirte.sh
 
 ```bash
 sh scripts/experimental_setup.sh
-sh scripts/predict.sh
+sh scripts/predict_processed_data.sh
 sh scripts/evaluate_RAG_predictions.sh
 ```
