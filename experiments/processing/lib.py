@@ -3,8 +3,11 @@ import json
 from typing import List, Dict
 from pathlib import Path
 
-from rapidfuzz import fuzz
+import dotenv
 import requests
+from rapidfuzz import fuzz
+
+dotenv.load_dotenv()
 
 
 def read_json(file_path: str) -> Dict:
@@ -32,10 +35,6 @@ def write_jsonl(instances: List[Dict], file_path: str):
 
 def find_matching_paragraph_text(corpus_name: str, original_paragraph_text: str) -> str:
 
-    retriever_address_config = get_retriever_address()
-    retriever_host = str(retriever_address_config["host"])
-    retriever_port = str(retriever_address_config["port"])
-
     params = {
         "query_text": original_paragraph_text,
         "retrieval_method": "retrieve_from_elasticsearch",
@@ -43,7 +42,7 @@ def find_matching_paragraph_text(corpus_name: str, original_paragraph_text: str)
         "corpus_name": corpus_name,
     }
 
-    url = retriever_host.rstrip("/") + ":" + str(retriever_port) + "/retrieve"
+    url = os.environ.get('RETRIEVER_API_URL')
     result = requests.post(url, json=params)
 
     if not result.ok:
