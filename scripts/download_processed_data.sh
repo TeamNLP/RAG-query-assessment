@@ -14,7 +14,7 @@ gdown "1t2BjJtsejSIUZI54PKObMFG6_wMMG3bC&confirm=t" -O .temp/processed_data.zip
 unzip  -o .temp/processed_data.zip -d experiments -x "*.DS_Store"
 
 rm -rf .temp/
-
+rm -rf experiments/processed_data/iirc
 
 # The resulting experiments/processed_data/ directory should look like:
 # .
@@ -25,12 +25,6 @@ rm -rf .temp/
 # │   ├── test_subsampled.jsonl
 # │   └── train.jsonl
 # ├── hotpotqa
-# │   ├── annotated_only_train.jsonl
-# │   ├── dev.jsonl
-# │   ├── dev_subsampled.jsonl
-# │   ├── test_subsampled.jsonl
-# │   └── train.jsonl
-# ├── iirc
 # │   ├── annotated_only_train.jsonl
 # │   ├── dev.jsonl
 # │   ├── dev_subsampled.jsonl
