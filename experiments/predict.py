@@ -176,6 +176,7 @@ class Generator:
         passages: str
     ) -> Optional[str]:
         assert self.use_hf == False
+        assert args.use_chat_template == True
         input_prompt = self.make_rag_prompt(query, passages)
 
         try:
