@@ -153,7 +153,7 @@ class Generator:
             else:
                 return self.prompt_template.format(instruction=RAG_SYS_PROMPT, query=query, passages=passages)
 
-    def make_rag_prompts(
+    def make_rag_prompt_batch(
         self,
         queries: List[str], 
         batch_passages: List[str] = []
@@ -170,44 +170,30 @@ class Generator:
 
         return formatted_prompts
 
-    def generate_response(
+    def generate_gpt_response(
         self, 
         query: str, 
         passages: str
     ) -> Optional[str]:
+        assert self.use_hf == False
         input_prompt = self.make_rag_prompt(query, passages)
 
-        if self.use_hf: # Load models at HuggingFace Hub
-            response = self.generation_pipe(
-                input_prompt,
-                max_new_tokens=self.max_new_tokens,
-                eos_token_id=self.terminators,
-                do_sample=self.do_sample,
+        try:
+            response = client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": input_prompt},
+                ],
                 temperature=self.temperature,
-                top_p=self.top_p,
-                top_k=self.top_k,
-                pad_token_id=self.generation_pipe.tokenizer.eos_token_id
+                max_tokens=args.generator_max_new_tokens
             )
-            output = response[0]["generated_text"].split(self.template_suffix)[-1].strip()
+            output = response.choices[0].message.content.strip()
             return output
 
-        else: # Use OpenAI API
-            try:
-                response = client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": self.system_prompt},
-                        {"role": "user", "content": input_prompt},
-                    ],
-                    temperature=self.temperature,
-                    max_tokens=args.generator_max_new_tokens
-                )
-                output = response.choices[0].message.content.strip()
-                return output
-
-            except Exception as e:
-                print(e)
-                return None
+        except Exception as e:
+            print(e)
+            return None
 
 
 class RAGFramework:
@@ -215,7 +201,9 @@ class RAGFramework:
         self.retriever = retriever
         self.generator = generator
 
-    def run(self, query):
+    def run_gpt(self, query, debug=False):
+        assert self.generator.use_hf == False
+
         retrieval_results, retrieval_time = self.retriever.retrieve(query)
         retrieved_passages = self.retriever.get_passages_as_str(retrieval_results)
         if debug: print("\nRetrieved passages: ", retrieved_passages)
@@ -224,7 +212,7 @@ class RAGFramework:
         if debug: print("\nInput prompt: ", input_prompt)
         
         # Generate Response
-        response = self.generator.generate_response(
+        response = self.generator.generate_gpt_response(
             query=query, 
             passages=retrieved_passages
         )
@@ -255,7 +243,7 @@ class RAGFramework:
             batch_retrieval_passages.append(retrieval_passages)
             
         # Prepare formatted prompts from the LLM        
-        formatted_prompts = self.generator.make_rag_prompts(queries, batch_retrieval_passages)
+        formatted_prompts = self.generator.make_rag_prompt_batch(queries, batch_retrieval_passages)
 
         # Generate responses via vllm
         responses = self.generator.llm.generate(
@@ -348,16 +336,17 @@ def load_data_in_batches(dataset_path, batch_size):
         raise e
 
 
-def generate_predictions(dataset_path, rag_model, batch_size=2):
+def generate_hf_predictions(dataset_path, rag_model, batch_size=2):
     """
     Processes batches of data from a dataset to generate predictions using a model.
     
     Args:
     dataset_path (str): Path to the dataset.
     rag_model (object): RAGFramework that provides `batch_generate_prediction()` interfaces.
+    batch_size (int)
     
     Returns:
-    tuple: A tuple containing lists of question_ids, queries, and predictions.
+    dict: A dictionary with question_id as key and predictions as value.
     """
     question_ids, queries, predictions = [], [], []
 
@@ -368,8 +357,42 @@ def generate_predictions(dataset_path, rag_model, batch_size=2):
         queries.extend(batch["question_text"])
         predictions.extend(batch_predictions)
     
-    return question_ids, queries, predictions
+    assert len(question_ids) == len(queries) and len(queries) == len(predictions)
 
+    output_instance = {}
+    for i in range(len(queries)):
+        question_id = question_ids[i]
+        prediction = predictions[i]
+
+        output_instance[question_id] = prediction
+
+    return output_instance
+
+def generate_gpt_predictions(dataset_path, rag_model, debug=False):
+    """
+    Generate predictions using an OpenAI GPT model.
+    
+    Args:
+    dataset_path (str): Path to the dataset.
+    rag_model (object): RAGFramework that provides `batch_generate_prediction()` interfaces.
+    
+    Returns:
+    dict: A dictionary with question_id as key and predictions as value.
+    """
+    
+    input_instance = read_jsonl(input_filepath)
+    output_instance = {}
+
+    print(f"run RAG on {args.dataset_type}.jsonl of {args.dataset}")
+
+    for datum in tqdm(input_instance, desc=f"Generating predictions on {dataset_path}"):
+        question_id = datum["question_id"]
+        question_text = datum["question_text"]
+
+        response = rag.run(query=question_text, debug=debug)
+        output_instance[question_id] = response
+    
+    return output_instance
 
 def main(args):
     if args.retriever_api_url is None:
@@ -385,23 +408,17 @@ def main(args):
 
     input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.input_directory, args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
-    # input_instance = read_jsonl(input_filepath)
 
     output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.output_directory, args.dataset)
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     output_filepath = os.path.join(output_directory, f"prediction_{args.dataset_type}.json")
 
-    print(f"Run RAG on {args.dataset_type}.jsonl of {args.dataset}")
-    question_ids, queries, predictions = generate_predictions(input_filepath, rag, args.batch_size)
-    assert len(question_ids) == len(queries) and len(queries) == len(predictions)
-
-    output_instance = {}
-    for i in range(len(queries)):
-        question_id = question_ids[i]
-        prediction = predictions[i]
-
-        output_instance[question_id] = prediction
+    print(f"run RAG on {args.dataset_type}.jsonl of {args.dataset}")
+    if "gpt-3.5" in self.model_name.lower() or "gpt-4" in self.model_name.lower():
+        output_instance = generate_gpt_predictions(input_filepath, rag, debug=args.debug):
+    else:
+        output_instance = generate_hf_predictions(input_filepath, rag, batch_size=args.batch_size)
 
     write_json(output_instance, output_filepath)
 
