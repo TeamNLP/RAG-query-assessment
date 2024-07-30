@@ -17,6 +17,7 @@ experiments/method4_predictions*
 experiments/method5_predictions*
 experiments/rewritten_data/*
 !experiments/rewritten_data/.gitkeep
+scripts/_*.sh
 
 .temp/
 
