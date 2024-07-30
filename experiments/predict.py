@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import requests
-from typing import List, Tuple, Dict, Optional, Any
+from typing import List, Tuple, Dict, Optional, Union, Any
 
 import dotenv
 import torch
@@ -136,17 +136,24 @@ class Generator:
         self,
         query: str, 
         passages: str
-    ) -> str:
+    ) -> Union[str, List]:
         if self.use_chat_template:
-            # Formats queries and retrieval results using the chat_template of the model.
-            return self.tokenizer.apply_chat_template(
-                    [
-                        {"role": "system", "content": RAG_SYS_PROMPT},
-                        {"role": "user", "content": self.prompt_template_without_instruction.format(query=query, passages=passages)},
-                    ],
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
+            if self.use_hf:
+                # Formats queries and retrieval results using the chat_template of the model.
+                return self.tokenizer.apply_chat_template(
+                        [
+                            {"role": "system", "content": RAG_SYS_PROMPT},
+                            {"role": "user", "content": self.prompt_template_without_instruction.format(query=query, passages=passages)},
+                        ],
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+            else: # use OpenAI API
+                formatted_chat_template = [
+                    {"role": "system", "content": RAG_SYS_PROMPT},
+                    {"role": "user", "content": self.prompt_template_without_instruction.format(query=query, passages=passages)},
+                ]
+                return formatted_chat_template
         else:
             if args.use_template_wo_instruction:
                 return self.prompt_template_without_instruction.format(query=query, passages=passages)
@@ -177,15 +184,12 @@ class Generator:
     ) -> Optional[str]:
         assert self.use_hf == False
         assert args.use_chat_template == True
-        input_prompt = self.make_rag_prompt(query, passages)
+        formatted_chat_template = self.make_rag_prompt(query, passages)
 
         try:
             response = client.chat.completions.create(
                 model=self.model_name,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": input_prompt},
-                ],
+                messages=formatted_chat_template,
                 temperature=self.temperature,
                 max_tokens=args.generator_max_new_tokens
             )
@@ -381,16 +385,14 @@ def generate_gpt_predictions(dataset_path, rag_model, debug=False):
     dict: A dictionary with question_id as key and predictions as value.
     """
     
-    input_instance = read_jsonl(input_filepath)
+    input_instance = read_jsonl(dataset_path)
     output_instance = {}
-
-    print(f"run RAG on {args.dataset_type}.jsonl of {args.dataset}")
 
     for datum in tqdm(input_instance, desc=f"Generating predictions on {dataset_path}"):
         question_id = datum["question_id"]
         question_text = datum["question_text"]
 
-        response = rag.run(query=question_text, debug=debug)
+        response = rag_model.run_gpt(query=question_text, debug=debug)
         output_instance[question_id] = response
     
     return output_instance
