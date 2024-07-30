@@ -416,8 +416,8 @@ def main(args):
     output_filepath = os.path.join(output_directory, f"prediction_{args.dataset_type}.json")
 
     print(f"run RAG on {args.dataset_type}.jsonl of {args.dataset}")
-    if "gpt-3.5" in self.model_name.lower() or "gpt-4" in self.model_name.lower():
-        output_instance = generate_gpt_predictions(input_filepath, rag, debug=args.debug):
+    if "gpt-3.5" in args.generator_model_name.lower() or "gpt-4" in args.generator_model_name.lower():
+        output_instance = generate_gpt_predictions(input_filepath, rag, debug=args.debug)
     else:
         output_instance = generate_hf_predictions(input_filepath, rag, batch_size=args.batch_size)
 
