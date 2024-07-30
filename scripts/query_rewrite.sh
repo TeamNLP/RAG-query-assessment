@@ -3,8 +3,7 @@
 for rewrite_method in method1 method2 method3 method4 method5
 do
     echo "Rewrite Method: $rewrite_method"
-    for dataset in nq trivia
-    # for dataset in nq trivia squad hotpotqa 2wikimultihopqa musique 
+    for dataset in nq trivia squad hotpotqa 2wikimultihopqa musique 
     do
         python experiments/rewriting/rewrite.py \
             --rewrite_method $rewrite_method \

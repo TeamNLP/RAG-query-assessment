@@ -10,8 +10,7 @@ args = parser.parse_args()
 
 def extract_metrics(directories):
     # Define the subdirectories to look for the JSON files
-    subdirs = ["nq", "trivia"]
-    # subdirs = ["nq", "squad", "trivia", "2wikimultihopqa", "hotpotqa", "musique"]
+    subdirs = ["nq", "squad", "trivia", "2wikimultihopqa", "hotpotqa", "musique"]
     
     # Prepare the CSV file
     output_csv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), f'{args.output_directory_prefix}_evaluation_results.csv')
@@ -49,6 +48,7 @@ directories = [
     f'{args.output_directory_prefix}_Meta-Llama-3-8B-Instruct',
     f'{args.output_directory_prefix}_Meta-Llama-3.1-8B',
     f'{args.output_directory_prefix}_Meta-Llama-3.1-8B-Instruct',
+    f'{args.output_directory_prefix}_gpt-4o-mini-2024-07-18',
 ]
 
 extract_metrics(directories)

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# use template with instruction
 for rewrite_method in method1 method2 method3 method4 method5
 do
+    # use template with instruction
     for model_path in meta-llama/Meta-Llama-3.1-8B meta-llama/Meta-Llama-3.1-8B-Instruct meta-llama/Meta-Llama-3-8B meta-llama/Meta-Llama-3-8B-Instruct
     do
         model_suffix=${model_path#*/}
@@ -20,11 +20,8 @@ do
                 --generator_model_name $model_path
         done
     done
-done
 
-# use_template_wo_instruction
-for rewrite_method in method1 method2 method3 method4 method5
-do
+    # use_template_wo_instruction
     for model_path in meta-llama/Meta-Llama-3.1-8B meta-llama/Meta-Llama-3-8B 
     do
         model_suffix=${model_path#*/}
@@ -43,11 +40,8 @@ do
                 --generator_model_name $model_path
         done
     done
-done
 
-# use_chat_template
-for rewrite_method in method1 method2 method3 method4 method5
-do
+    # use_chat_template
     for model_path in meta-llama/Meta-Llama-3.1-8B-Instruct meta-llama/Meta-Llama-3-8B-Instruct gpt-4o-mini-2024-07-18
     do
         model_suffix=${model_path#*/}
