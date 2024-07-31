@@ -58,15 +58,19 @@ sh scripts/label_ft_dataset.sh
 sh scripts/fine_tune_classifier.sh
 ```
 
-### Rewriter
-```bash
-sh scripts/query_rewirte.sh
-```
-
 ### Experiments
 
 ```bash
 sh scripts/experimental_setup.sh
-sh scripts/predict.sh
+sh scripts/rewrite_data.sh
+```
+
+```bash
+sh scripts/predict_processed_data.sh
 sh scripts/evaluate_RAG_predictions.sh
+```
+
+```bash
+sh scripts/predict_rewritten_data.sh
+sh scripts/evaluate_RAG_rewritten_predictions.sh
 ```

@@ -1,12 +1,6 @@
 import os
 import json
 from typing import List, Dict
-# from pathlib import Path
-
-# import _jsonnet
-# import requests
-from datasets import load_dataset
-
 
 def read_json(file_path: str) -> Dict:
     with open(file_path, "r", encoding="utf8", errors='ignore') as file:
