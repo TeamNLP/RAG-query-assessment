@@ -9,12 +9,6 @@ experiments/processed_data/*
 !experiments/processed_data/sample.jsonl
 experiments/predictions/*
 !experiments/predictions/.gitkeep
-experiments/predictions*
-experiments/method1_predictions*
-experiments/method2_predictions*
-experiments/method3_predictions*
-experiments/method4_predictions*
-experiments/method5_predictions*
 experiments/rewritten_data/*
 !experiments/rewritten_data/.gitkeep
 scripts/_*.sh

@@ -11,7 +11,7 @@ do
             echo "model_path: $model_path, dataset: $dataset"
             python experiments/predict.py \
                 --input_directory "rewritten_data/$rewrite_method" \
-                --output_directory "$rewrite_method"_predictions_"$model_suffix" \
+                --output_directory predictions/"$rewrite_method"/"$model_suffix" \
                 --dataset $dataset \
                 --dataset_type test_subsampled \
                 --retrieval_top_n 5 \
@@ -30,7 +30,7 @@ do
             echo "model_path: $model_path, dataset: $dataset"
             python experiments/predict.py \
                 --input_directory "rewritten_data/$rewrite_method" \
-                --output_directory "$rewrite_method"_predictions_wo_"$model_suffix" \
+                --output_directory predictions/"$rewrite_method"/wo_"$model_suffix" \
                 --dataset $dataset \
                 --dataset_type test_subsampled \
                 --retrieval_top_n 5 \
@@ -50,7 +50,7 @@ do
             echo "model_path: $model_path, dataset: $dataset"
             python experiments/predict.py \
                 --input_directory "rewritten_data/$rewrite_method" \
-                --output_directory "$rewrite_method"_predictions_chat_"$model_suffix" \
+                --output_directory predictions/"$rewrite_method"/chat_"$model_suffix" \
                 --dataset $dataset \
                 --dataset_type test_subsampled \
                 --retrieval_top_n 5 \
