@@ -33,7 +33,7 @@ parser.add_argument('--output_directory', type=str, default="predictions", help=
 parser.add_argument('--retrieval_corpus_name', type=str, default=None, required=False, help="`corpus_name` for ElasticSearch Retriever")
 parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_url` for ElasticSearch Retriever")
 parser.add_argument('--retrieval_top_n', type=int, default=3, help="A number for how many results to retrieve")
-parser.add_argument('--generator_model_name', type=str, required=True, help="`model_name` for Generator")
+parser.add_argument('--generator_model_name', type=str, required=True, help="`model_name` for Generator. Please refer to https://docs.vllm.ai/en/latest/models/supported_models.html.")
 parser.add_argument('--generator_max_new_tokens', type=int, default=100, help="`max_new_tokens` for generator.")
 parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
 parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
