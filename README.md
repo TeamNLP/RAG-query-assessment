@@ -4,11 +4,12 @@
 ├── classifier
 │   ├── fine-tuning
 │   ├── ft_dataset
-│   │   ├── generation
-│   │   └── labeling
-│   │       └── auto_evaluation
-│   │           ├── prompts
-│   │           └── result
+│   │   ├── labeling
+│   │   │   └── auto_evaluation
+│   │   │       ├── prompts
+│   │   │       └── result
+│   │   ├── predictions
+│   │   └── source
 │   └── model
 ├── experiments
 │   ├── metrics
