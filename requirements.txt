@@ -16,6 +16,8 @@ scikit-learn
 elasticsearch==7.9.1
 uvicorn[standard]
 base58
+evaluate
+bert_score
 
 --extra-index-url https://download.pytorch.org/whl/cu121
 torch
