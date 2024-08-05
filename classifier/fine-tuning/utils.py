@@ -1,4 +1,8 @@
+import numpy as np
+import torch
 from datasets import load_dataset
+from loguru import logger
+from sklearn.metrics import precision_recall_fscore_support
 from transformers import (
     CONFIG_MAPPING,
     AutoConfig,
@@ -8,6 +12,7 @@ from transformers import (
     # SchedulerType,
     # get_scheduler,
 )
+
 
 label2id = {False: 0, True: 1}
 id2label = {id: label for label, id in label2id.items()}
@@ -19,6 +24,8 @@ def load_model(args):
     In distributed training:
     The .from_pretrained methods guarantee that only one local process can concurrently download model & vocab.
     """
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.config_name:
         if args.model_type == "AutoModelForSequenceClassification":
@@ -65,16 +72,16 @@ def load_model(args):
                 args.model_name_or_path,
                 from_tf=bool(".ckpt" in args.model_name_or_path),
                 config=config,
-            )
+            ).to(device)
         elif args.model_type == "AutoModelForSeq2SeqLM":
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 args.model_name_or_path,
                 from_tf=bool(".ckpt" in args.model_name_or_path),
                 config=config,
-            )
+            ).to(device)
     else:
         logger.info("Training new model from scratch")
-        model = AutoModelForSeq2SeqLM.from_config(config)
+        model = AutoModelForSeq2SeqLM.from_config(config).to(device)
         
     return model, tokenizer
 
