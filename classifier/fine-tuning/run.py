@@ -8,6 +8,7 @@ https://github.com/starsuzi/Adaptive-RAG/blob/main/classifier/run/run_large_trai
 
 import argparse
 
+from huggingface_hub import HfFolder
 from loguru import logger
 from transformers import Trainer, TrainingArguments
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
@@ -178,6 +179,7 @@ If `"epoch"` or `"steps"` is chosen, saving will also be performed at the very e
     parser.add_argument(
         "--hub_model_id",
         type=str,
+        default=None,
         help="The name of the repository to keep in sync with the local `output_dir`."
     )
     parser.add_argument(
@@ -201,10 +203,19 @@ def main():
     tokenized_dataset = load_ft_dataset(args)
 
     if args.do_train:
-        if args.hub_token:
+        if args.hub_token is not None and args.hub_token.lower() == "none":
+            args.hub_token = None
+        if args.hub_token is not None:
             user_hub_token = args.hub_token
         else:
-            user_hub_token = HfFolder.get_token()
+            try:
+                user_hub_token = HfFolder.get_token()
+            except:
+                user_hub_token = None
+        
+        if user_hub_token is None:
+            args.hub_model_id = None
+            args.push_to_hub = False
 
         if args.model_type == "AutoModelForSequenceClassification":
             # Define training args
