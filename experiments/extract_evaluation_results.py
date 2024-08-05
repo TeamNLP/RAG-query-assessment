@@ -45,11 +45,13 @@ def extract_metrics(directories):
 
 # Example usage
 directories = [
+    f'{args.base_directory}/{args.output_directory_prefix}gpt-4o-mini-2024-07-18',
     f'{args.base_directory}/{args.output_directory_prefix}Meta-Llama-3-8B',
     f'{args.base_directory}/{args.output_directory_prefix}Meta-Llama-3-8B-Instruct',
     f'{args.base_directory}/{args.output_directory_prefix}Meta-Llama-3.1-8B',
     f'{args.base_directory}/{args.output_directory_prefix}Meta-Llama-3.1-8B-Instruct',
-    f'{args.base_directory}/{args.output_directory_prefix}gpt-4o-mini-2024-07-18',
+    f'{args.base_directory}/{args.output_directory_prefix}Qwen2-7B',
+    f'{args.base_directory}/{args.output_directory_prefix}Qwen2-7B-Instruct',
 ]
 
 extract_metrics(directories)

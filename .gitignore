@@ -1,6 +1,12 @@
 api_responses/
 data
 classifier/model/
+classifier/ft_dataset/source/*
+!classifier/ft_dataset/source/sample.jsonl
+classifier/ft_dataset/predictions/*
+!classifier/ft_dataset/predictions/predictions-sample.jsonl
+classifier/ft_dataset/evaluation/result/*
+!classifier/ft_dataset/evaluation/result/sample_query-wise_eval_result.jsonl
 experiments/evaluation_results.csv
 experiments/raw_data/*
 !experiments/raw_data/.gitkeep

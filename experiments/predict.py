@@ -32,11 +32,11 @@ parser.add_argument('--input_directory', type=str, default="processed_data", hel
 parser.add_argument('--output_directory', type=str, default="predictions", help="`output_directory` to store the prediction results")
 parser.add_argument('--retrieval_corpus_name', type=str, default=None, required=False, help="`corpus_name` for ElasticSearch Retriever")
 parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_url` for ElasticSearch Retriever")
-parser.add_argument('--retrieval_top_n', type=int, default=3, help="A number for how many results to retrieve")
-parser.add_argument('--generator_model_name', type=str, required=True, help="`model_name` for Generator")
+parser.add_argument('--retrieval_top_n', type=int, default=5, help="A number for how many results to retrieve")
+parser.add_argument('--generator_model_name', type=str, default=None, help="`model_name` for Generator. Please refer to https://docs.vllm.ai/en/latest/models/supported_models.html.")
 parser.add_argument('--generator_max_new_tokens', type=int, default=100, help="`max_new_tokens` for generator.")
-parser.add_argument("--dataset", type=str, required=True, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
-parser.add_argument("--dataset_type", type=str, required=True, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
+parser.add_argument("--dataset", type=str, default=None, choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad'), help="")
+parser.add_argument("--dataset_type", type=str, default=None, choices=("train", "dev", "test_subsampled", "dev_500_subsampled"), help="")
 parser.add_argument('--do_sample', action="store_true", help="whether use sampling while generate responses")
 parser.add_argument('--temperature', type=float, default=1.0, help="")
 parser.add_argument('--top_k', type=int, default=50, help="")
@@ -53,7 +53,7 @@ args = parser.parse_args()
 
 
 class Retriever:
-    def __init__(self, corpus_name, top_n=3, method="retrieve_from_elasticsearch", api_url="http://localhost:8000/"):
+    def __init__(self, corpus_name, top_n=5, method="retrieve_from_elasticsearch", api_url="http://localhost:8000/"):
         assert method == "retrieve_from_elasticsearch"
 
         self.corpus_name = corpus_name

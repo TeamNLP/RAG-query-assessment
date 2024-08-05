@@ -17,9 +17,6 @@ from lib import (
     write_json,
     write_jsonl,
 )
-from metrics.drop_answer_em_f1 import DropAnswerEmAndF1
-from metrics.support_em_f1 import SupportEmF1Metric
-from metrics.answer_support_recall import AnswerSupportRecallMetric
 from metrics.squad_answer_em_f1 import SquadAnswerEmF1Metric
 
 
@@ -121,11 +118,10 @@ def evaluate_by_dicts(data_name, dataset_type):
 
         assert isinstance(prediction, (str, list))
         if isinstance(prediction, str):
-            # if prediction.strip().startswith("[") or prediction.strip().endswith("]"):
-            #     prediction = [e for e in prediction.replace('"', "").replace("[", "").replace("]", "").split(",")]
-            # else:
-            #     prediction = [prediction]
-            prediction = [prediction]
+            if prediction.strip().startswith("[") or prediction.strip().endswith("]"):
+                prediction = [e for e in prediction.replace('"', "").replace("[", "").replace("]", "").split(",")]
+            else:
+                prediction = [prediction]
 
         assert isinstance(prediction, (list, tuple))
         prediction = [str(e) for e in prediction]
