@@ -1,6 +1,7 @@
 #!/bin/bash
 
 python classifier/ft_dataset/labeling/query_wise_label.py \
+    --seed 13370 \
     --eval_result_path classifier/ft_dataset/evaluation/result \
     --performance_threshold 0.5 \
-    --result_file_path classifier/ft_dataset/ft_dataset.json
+    --result_dataset_path classifier/ft_dataset
