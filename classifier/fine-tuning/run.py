@@ -247,7 +247,7 @@ def main():
                     model=model,
                     args=training_args,
                     train_dataset=tokenized_dataset["train"],
-                    eval_dataset=tokenized_dataset["test"],
+                    eval_dataset=tokenized_dataset["validation"],
                     compute_metrics=compute_metrics,
                 )
             else:
@@ -291,7 +291,7 @@ def main():
                     args=training_args,
                     data_collator=data_collator,
                     train_dataset=tokenized_dataset["train"],
-                    eval_dataset=tokenized_dataset["test"],
+                    eval_dataset=tokenized_dataset["validation"],
                     compute_metrics=compute_metrics,
                 )
             else:
@@ -318,7 +318,8 @@ def main():
             trainer.evaluate()
     
     if args.do_predict:
-        pass
+        raise NotImplementedError("`do_predict` is not implemented yet.")
+
 
 
 if __name__ == "__main__":
