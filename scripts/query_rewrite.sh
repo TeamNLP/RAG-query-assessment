@@ -5,7 +5,7 @@ do
     echo "Rewrite Method: $rewrite_method"
     for dataset in nq trivia squad hotpotqa 2wikimultihopqa musique 
     do
-        python experiments/rewriting/rewrite.py \
+        python experiments/rewrite.py \
             --rewrite_method $rewrite_method \
             --rewriter_model_name gpt-4o-mini-2024-07-18 \
             --rewriter_max_new_tokens 200 \
@@ -18,7 +18,7 @@ done
 
 # for rewrite_method in method1 method2 method3 method4 method5
 # do
-#     python experiments/rewriting/rewrite.py \
+#     python experiments/rewrite.py \
 #         --rewrite_method $rewrite_method \
 #         --rewriter_model_name gpt-4o-mini-2024-07-18 \
 #         --rewriter_max_new_tokens 200 \

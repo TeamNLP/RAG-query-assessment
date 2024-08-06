@@ -1,3 +1,13 @@
+#################### Prompts for RAG ####################
+RAG_SYS_PROMPT = """You are an assistant for answering questions.
+You are given the extracted parts of a long document and a question.
+Refer to the passage below and answer the following question shortly and concisely."""
+
+RAG_PROMPT_TEMPLATE = "Instruction: {instruction}\n\nPassages: {passages}\n\nQuestion: {query}\n\nAnswer: "
+RAG_PROMPT_TEMPLATE_WO_INST = "Passages: {passages}\n\nQuestion: {query}\n\nAnswer: "
+RAG_PROMPT_TEMPLATE_SUFFIX = "Answer: "
+
+
 #################### Prompts for Query Rewriter ####################
 REWRITER_SYSTEM_PROMPT = "You are a Query Rewriter, tasked with reshaping user's query to fit specific requirements for a Retrieval Augmented Generation (RAG) system."
 REWRITER_GENERAL_SYSTEM_PROMPT = (

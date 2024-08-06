@@ -7,7 +7,7 @@ import torch
 from lib import CORPUS_NAME_DICT, read_jsonl, write_json
 from loguru import logger
 from openai import OpenAI
-from model.RAG import make_rag_framework
+from model.QWER import make_qwer_framework
 from tqdm import tqdm
 
 
@@ -16,6 +16,9 @@ dotenv.load_dotenv()
 parser = argparse.ArgumentParser()
 parser.add_argument('--input_directory', type=str, default="processed_data", help="`input_directory` to predict results")
 parser.add_argument('--output_directory', type=str, default="predictions", help="`output_directory` to store the prediction results")
+parser.add_argument('--classifier_model_name', type=str, default=None, required=False, help="`model_name` for Classifier.")
+parser.add_argument('--rewriter_model_name', type=str, default="gpt-4o-mini-2024-07-18", help="OpenAI `model_name` for Rewriter")
+parser.add_argument('--rewriter_max_new_tokens', type=int, default=200, help="`max_new_tokens` for Rewriter.")
 parser.add_argument('--retrieval_corpus_name', type=str, default=None, required=False, help="`corpus_name` for ElasticSearch Retriever")
 parser.add_argument('--retriever_api_url', type=str, default=None, help="`api_url` for ElasticSearch Retriever")
 parser.add_argument('--retrieval_top_n', type=int, default=5, help="A number for how many results to retrieve")
@@ -79,13 +82,13 @@ def load_data_in_batches(dataset_path, batch_size):
         raise e
 
 
-def generate_hf_predictions(dataset_path, rag_framework, batch_size=2):
+def generate_hf_predictions(dataset_path, qwer_framework, batch_size=2):
     """
     Processes batches of data from a dataset to generate predictions using a model.
     
     Args:
     dataset_path (str): Path to the dataset.
-    rag_framework (object): RAGFramework that provides `run_hf()` interfaces.
+    qwer_framework (object): QWERFramework that provides `run_hf()` interfaces.
     batch_size (int)
     
     Returns:
@@ -98,7 +101,7 @@ def generate_hf_predictions(dataset_path, rag_framework, batch_size=2):
 
     elif batch_size > 1:
         for batch in tqdm(load_data_in_batches(dataset_path, batch_size), desc=f"Generating predictions on {dataset_path}"):
-            batch_predictions = rag_framework.run_framework(batch)
+            batch_predictions = qwer_framework.run_framework(batch)
             
             question_ids.extend(batch["question_id"])
             queries.extend(batch["question_text"])
@@ -118,7 +121,7 @@ def generate_hf_predictions(dataset_path, rag_framework, batch_size=2):
 
 def generate_gpt_predictions(
     dataset_path, 
-    rag_framework, 
+    qwer_framework, 
     # debug=False
 ):
     """
@@ -126,7 +129,7 @@ def generate_gpt_predictions(
     
     Args:
     dataset_path (str): Path to the dataset.
-    rag_framework (object): RAGFramework that provides `run_gpt()` interfaces.
+    qwer_framework (object): QWERFramework that provides `run_gpt()` interfaces.
     
     Returns:
     dict: A dictionary with question_id as key and predictions as value.
@@ -139,7 +142,7 @@ def generate_gpt_predictions(
         question_id = datum["question_id"]
         question_text = datum["question_text"]
 
-        response = rag_framework.run_framework(
+        response = qwer_framework.run_framework(
             query=question_text, 
             # debug=debug
         )
@@ -158,7 +161,7 @@ def main(args):
     if args.retrieval_corpus_name is None:
         args.retrieval_corpus_name = CORPUS_NAME_DICT[args.dataset]        
 
-    rag_framework = make_rag_framework(args)
+    qwer_framework = make_qwer_framework(args)
 
     input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.input_directory, args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
@@ -172,13 +175,13 @@ def main(args):
     if "gpt-3.5" in args.generator_model_name.lower() or "gpt-4" in args.generator_model_name.lower():
         output_instance = generate_gpt_predictions(
             input_filepath, 
-            rag_framework, 
+            qwer_framework, 
             # debug=args.debug
         )
     else:
         output_instance = generate_hf_predictions(
             input_filepath, 
-            rag_framework, 
+            qwer_framework, 
             batch_size=args.batch_size
         )
 

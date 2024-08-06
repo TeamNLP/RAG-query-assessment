@@ -5,11 +5,13 @@ from statistics import mean
 
 from typing import List, Dict
 from lib import read_jsonl, dump_json
+from sklearn.model_selection import train_test_split
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--seed", type=int, default=13370, help="A seed for reproducible training.")
 parser.add_argument('--eval_result_path', type=str, default="classifier/ft_dataset/evaluation/result", help="A directory path where the evaluation results are stored")
 parser.add_argument('--performance_threshold', type=float, default=0.5, help="A threshold for performance of the model")
-parser.add_argument('--result_file_path', type=str, default="classifier/ft_dataset/ft_dataset.json", help="File Path to save query labeling results")
+parser.add_argument('--result_dataset_path', type=str, default="classifier/ft_dataset", help="A directory path to save query labeling results")
 
 args = parser.parse_args()
 
@@ -74,7 +76,16 @@ def main(args):
 
     categorized_result = categorize_score(eval_result_instances, args.performance_threshold)
     labeled_dataset = query_wise_label(categorized_result)
-    dump_json(labeled_dataset, args.result_file_path)
+
+    result_file_path = os.path.join(args.result_dataset_path, "ft_dataset.json")
+    dump_json(labeled_dataset, result_file_path)
+
+    # train_test_split
+    train_dataset, valid_dataset = train_test_split(labeled_dataset, test_size=0.2, shuffle=True, stratify=None, random_state=args.seed)
+    train_result_file_path = os.path.join(args.result_dataset_path, "ft_dataset_train.json")
+    valid_result_file_path = os.path.join(args.result_dataset_path, "ft_dataset_valid.json")
+    dump_json(train_dataset, train_result_file_path)
+    dump_json(valid_dataset, valid_result_file_path)
 
 
 if __name__ == "__main__":

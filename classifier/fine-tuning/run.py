@@ -71,7 +71,7 @@ def parse_args():
     parser.add_argument(
         "--seed", 
         type=int, 
-        default=42, 
+        default=13370, 
         help="A seed for reproducible training."
     )
 

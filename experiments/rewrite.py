@@ -4,6 +4,7 @@ import os
 import dotenv
 from datasets import load_dataset, Dataset
 from lib import read_jsonl, write_jsonl, hf_stratified_sampling, stratified_sampling, stratified_sampling_for_ambig_qa
+from model.rewriter import Rewriter
 from openai import OpenAI
 from typing import List, Tuple, Dict, Optional
 from tqdm import tqdm
@@ -11,8 +12,6 @@ from tqdm import tqdm
 
 dotenv.load_dotenv()
 api_key = os.environ.get('OPENAI_API_KEY')
-
-client = OpenAI(api_key=api_key)
 
 
 parser = argparse.ArgumentParser()
@@ -31,68 +30,30 @@ args = parser.parse_args()
 
 
 if args.rewrite_method == "method1":
-    from prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_1, INPUT_TEMPLATE_METHOD_1
+    from model.prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_1, INPUT_TEMPLATE_METHOD_1
     REWRITE_PROMPT = REWRITE_PROMPT_METHOD_1
     INPUT_PROMPT = INPUT_TEMPLATE_METHOD_1
     SYSTEM_PROMPT = REWRITER_GENERAL_SYSTEM_PROMPT
 elif args.rewrite_method == "method2":
-    from prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_2, INPUT_TEMPLATE_METHOD_2
+    from model.prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_2, INPUT_TEMPLATE_METHOD_2
     REWRITE_PROMPT = REWRITE_PROMPT_METHOD_2
     INPUT_PROMPT = INPUT_TEMPLATE_METHOD_2
     SYSTEM_PROMPT = REWRITER_GENERAL_SYSTEM_PROMPT
 elif args.rewrite_method == "method3":
-    from prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_3, INPUT_TEMPLATE_METHOD_3
+    from model.prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_3, INPUT_TEMPLATE_METHOD_3
     REWRITE_PROMPT = REWRITE_PROMPT_METHOD_3
     INPUT_PROMPT = INPUT_TEMPLATE_METHOD_3
     SYSTEM_PROMPT = REWRITER_GENERAL_SYSTEM_PROMPT
 elif args.rewrite_method == "method4":
-    from prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_4, INPUT_TEMPLATE_METHOD_4
+    from model.prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_4, INPUT_TEMPLATE_METHOD_4
     REWRITE_PROMPT = REWRITE_PROMPT_METHOD_4
     INPUT_PROMPT = INPUT_TEMPLATE_METHOD_4
     SYSTEM_PROMPT = REWRITER_GENERAL_SYSTEM_PROMPT
 elif args.rewrite_method == "method5":
-    from prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_5, INPUT_TEMPLATE_METHOD_5
+    from model.prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_5, INPUT_TEMPLATE_METHOD_5
     REWRITE_PROMPT = REWRITE_PROMPT_METHOD_5
     INPUT_PROMPT = INPUT_TEMPLATE_METHOD_5
     SYSTEM_PROMPT = REWRITER_GENERAL_SYSTEM_PROMPT
-
-class Rewriter:
-    def __init__(self, model_name, rewrite_prompt, input_prompt, max_new_tokens=70):
-        self.model_name = model_name
-        self.rewrite_prompt = rewrite_prompt
-        self.input_prompt = input_prompt
-        self.max_new_tokens = max_new_tokens
-
-    def make_rewrite_prompt(
-        self,
-        query: str
-    ) -> Tuple[str, str]:
-        rewrite_prompt = self.rewrite_prompt
-        input_prompt = self.input_prompt.format(query=query)
-        return rewrite_prompt, input_prompt
-
-    def rewrite_query(
-        self, 
-        query: str
-    ) -> Optional[str]:
-        rewrite_prompt, input_prompt = self.make_rewrite_prompt(query)
-        try:
-            response = client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": rewrite_prompt},
-                    {"role": "user", "content": input_prompt}
-                ],
-                model=self.model_name,
-                max_tokens=self.max_new_tokens
-            )
-
-            output = response.choices[0].message.content.strip()
-            return output
-
-        except Exception as e:
-            print(e)
-            return None
 
 
 def get_rewritten_query(rewriter, query):
@@ -122,11 +83,14 @@ def test(args):
 
 
 def main(args):
+    openai_client = OpenAI(api_key=api_key)
+
     rewriter = Rewriter(
         model_name=args.rewriter_model_name,
         rewrite_prompt=REWRITE_PROMPT,
         input_prompt=INPUT_PROMPT,
         max_new_tokens=args.rewriter_max_new_tokens,
+        openai_client=openai_client
     )
 
     if args.dataset in ['sewon/ambig_qa', 'ambig_qa', 'microsoft/ms_marco', 'ms_marco']:
@@ -168,7 +132,8 @@ def main(args):
             output_instances.append(output_instance)
 
     else:
-        input_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), "processed_data", args.dataset)
+        input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "processed_data", args.dataset)
+
         input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
         input_instance = read_jsonl(input_filepath)
 
@@ -183,11 +148,11 @@ def main(args):
 
             output_instances.append(datum)
 
-    output_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), args.output_directory, args.dataset)
+    output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.output_directory, args.dataset)
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     output_filepath = os.path.join(output_directory, f"{output_file_name}.jsonl")
-    
+
     write_jsonl(output_instances, output_filepath)
 
 
