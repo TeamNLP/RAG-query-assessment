@@ -1,8 +1,10 @@
+import os
 import requests
 from typing import List, Tuple, Dict, Optional, Union, Any
 
 import vllm
 from openai import OpenAI
+from framework import Framework
 from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_WO_INST, RAG_PROMPT_TEMPLATE_SUFFIX
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
@@ -159,20 +161,20 @@ class Generator:
             return None
 
 
-class RAGFramework:
-    def __init__(self, retriever, generator):
-        self.retriever = retriever
-        self.generator = generator
-
-    def run_gpt(self, query, debug=False):
+class RAGFramework(Framework):
+    def run_gpt(
+        self, 
+        query: str, 
+        # debug=False
+    ) -> str:
         assert self.generator.use_hf == False
 
         retrieval_results, retrieval_time = self.retriever.retrieve(query)
         retrieved_passages = self.retriever.get_passages_as_str(retrieval_results)
-        if debug: print("\nRetrieved passages: ", retrieved_passages)
+        # if debug: print("\nRetrieved passages: ", retrieved_passages)
         
         input_prompt = self.generator.make_rag_prompt(query, retrieved_passages)
-        if debug: print("\nInput prompt: ", input_prompt)
+        # if debug: print("\nInput prompt: ", input_prompt)
         
         # Generate Response
         response = self.generator.generate_gpt_response(
@@ -180,58 +182,94 @@ class RAGFramework:
             passages=retrieved_passages
         )
         
-        if debug: print("Generated response: ", response)
+        # if debug: print("Generated response: ", response)
         
         return response
 
-    def batch_generate_prediction(self, batch: Dict[str, Any]) -> List[str]:
+    def run_hf(
+        self, 
+        query: Union[str, Dict[str, Any]]
+    ) -> Union[str, List[str]]:
         """
-        Generates predictions for a batch of queries using associated (pre-cached) search results and query times.
+        Generates predictions for a single query or a batch of queries using associated (pre-cached) search results and query times.
 
         Parameters:
-            batch (Dict[str, Any]): A dictionary containing a batch of input queries with the following keys:
+            (A single) query (str): A input query
+                or
+            (A batch of) query (Dict[str, Any]): A dictionary containing a batch of input queries with the following keys:
                 - 'question_text' (List[str]): List of user queries.
 
         Returns:
-            List[str]: A list of plain text responses for each query in the batch. Each response is limited to given max_new_tokens.
-            If the generated response exceeds max_new_tokens, it will be truncated to fit within this limit.
-        """
-        queries = batch["question_text"]
+                str: A plain text response for a single query. The response is limited to given max_new_tokens.
+                    If the generated response exceeds max_new_tokens, it will be truncated to fit within this limit.
 
-        # Retrieve top matches for the whole batch
-        batch_retrieval_passages = []
-        for _idx, query in enumerate(queries):
+            or
+                List[str]: A list of plain text responses for each query in the batch. Each response is limited to given max_new_tokens.
+                    If the generated response exceeds max_new_tokens, it will be truncated to fit within this limit.
+        """
+        assert self.generator.use_hf == True
+
+        if isinstance(query, str): # A single query
             retrieval_results, _ = self.retriever.retrieve(query)
             retrieval_passages = self.retriever.get_passages_as_list(retrieval_results)
-            batch_retrieval_passages.append(retrieval_passages)
+                
+            # Prepare a formatted prompt from the self.generator  
+            formatted_prompt = self.generator.make_rag_prompt(query, retrieval_passages)
+
+            # Generate responses via vllm
+            response = self.generator.llm.generate(
+                formatted_prompt,
+                vllm.SamplingParams(
+                    n=1,  # Number of output sequences to return for each prompt.
+                    top_p=self.generator.top_p,  # Float that controls the cumulative probability of the top tokens to consider.
+                    top_k=self.generator.top_k,
+                    temperature=self.generator.temperature,  # Randomness of the sampling
+                    skip_special_tokens=True,  # Whether to skip special tokens in the output.
+                    stop_token_ids=[self.generator.tokenizer.eos_token_id, self.generator.tokenizer.convert_tokens_to_ids("<|eot_id|>")],
+                    max_tokens=self.generator.max_new_tokens  # Maximum number of tokens to generate per output sequence.
+                ),
+                use_tqdm=False # you might consider setting this to True during local development
+            )
+
+            return response.outputs[0].text
+
+        elif isinstance(query, dict): # A batch of queries
+            queries = query["question_text"]
+
+            # Retrieve top matches for the whole batch
+            batch_retrieval_passages = []
+            for _idx, _query in enumerate(queries):
+                retrieval_results, _ = self.retriever.retrieve(_query)
+                retrieval_passages = self.retriever.get_passages_as_list(retrieval_results)
+                batch_retrieval_passages.append(retrieval_passages)
+                
+            # Prepare formatted prompts from the self.generator
+            formatted_prompts = self.generator.make_rag_prompt_batch(queries, batch_retrieval_passages)
+
+            # Generate responses via vllm
+            responses = self.generator.llm.generate(
+                formatted_prompts,
+                vllm.SamplingParams(
+                    n=1,  # Number of output sequences to return for each prompt.
+                    top_p=self.generator.top_p,  # Float that controls the cumulative probability of the top tokens to consider.
+                    top_k=self.generator.top_k,
+                    temperature=self.generator.temperature,  # Randomness of the sampling
+                    skip_special_tokens=True,  # Whether to skip special tokens in the output.
+                    stop_token_ids=[self.generator.tokenizer.eos_token_id, self.generator.tokenizer.convert_tokens_to_ids("<|eot_id|>")],
+                    max_tokens=self.generator.max_new_tokens  # Maximum number of tokens to generate per output sequence.
+                ),
+                use_tqdm=False # you might consider setting this to True during local development
+            )
+
+            # Aggregate predictions into List[str]
+            predictions = []
+            for response in responses:
+                predictions.append(response.outputs[0].text)
             
-        # Prepare formatted prompts from the LLM        
-        formatted_prompts = self.generator.make_rag_prompt_batch(queries, batch_retrieval_passages)
-
-        # Generate responses via vllm
-        responses = self.generator.llm.generate(
-            formatted_prompts,
-            vllm.SamplingParams(
-                n=1,  # Number of output sequences to return for each prompt.
-                top_p=self.generator.top_p,  # Float that controls the cumulative probability of the top tokens to consider.
-                top_k=self.generator.top_k,
-                temperature=self.generator.temperature,  # Randomness of the sampling
-                skip_special_tokens=True,  # Whether to skip special tokens in the output.
-                stop_token_ids=[self.generator.tokenizer.eos_token_id, self.generator.tokenizer.convert_tokens_to_ids("<|eot_id|>")],
-                max_tokens=self.generator.max_new_tokens  # Maximum number of tokens to generate per output sequence.
-            ),
-            use_tqdm=False # you might consider setting this to True during local development
-        )
-
-        # Aggregate predictions into List[str]
-        predictions = []
-        for response in responses:
-            predictions.append(response.outputs[0].text)
-        
-        return predictions
+            return predictions
 
 
-def make_rag(args):
+def make_rag_framework(args):
     openai_client = None
     if "gpt-3.5" in args.generator_model_name.lower() or "gpt-4" in args.generator_model_name.lower():
         api_key = os.environ.get('OPENAI_API_KEY')
@@ -261,5 +299,5 @@ def make_rag(args):
     )
 
     # RAG framework 
-    rag = RAGFramework(retriever, generator)
-    return rag
+    rag_framework = RAGFramework(retriever, generator)
+    return rag_framework

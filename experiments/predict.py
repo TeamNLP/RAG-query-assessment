@@ -7,7 +7,7 @@ import torch
 from lib import CORPUS_NAME_DICT, read_jsonl, write_json
 from loguru import logger
 from openai import OpenAI
-from model.RAG import Retriever, Generator, RAGFramework, make_rag
+from model.RAG import make_rag_framework
 from tqdm import tqdm
 
 
@@ -33,7 +33,7 @@ parser.add_argument('--vllm_dtype', type=str, default="auto", help="Data type fo
 parser.add_argument('--batch_size', type=int, default=1, help="batch size")
 parser.add_argument('--use_chat_template', action="store_true", help="whether use chat template")
 parser.add_argument('--use_template_wo_instruction', action="store_true", help="whether use prompt template without instruction")
-parser.add_argument('--debug', action="store_true", help="whether use debug mode")
+# parser.add_argument('--debug', action="store_true", help="whether use debug mode")
 
 args = parser.parse_args()
 
@@ -79,13 +79,13 @@ def load_data_in_batches(dataset_path, batch_size):
         raise e
 
 
-def generate_hf_predictions(dataset_path, rag_model, batch_size=2):
+def generate_hf_predictions(dataset_path, rag_framework, batch_size=2):
     """
     Processes batches of data from a dataset to generate predictions using a model.
     
     Args:
     dataset_path (str): Path to the dataset.
-    rag_model (object): RAGFramework that provides `batch_generate_prediction()` interfaces.
+    rag_framework (object): RAGFramework that provides `run_hf()` interfaces.
     batch_size (int)
     
     Returns:
@@ -93,32 +93,40 @@ def generate_hf_predictions(dataset_path, rag_model, batch_size=2):
     """
     question_ids, queries, predictions = [], [], []
 
-    for batch in tqdm(load_data_in_batches(dataset_path, batch_size), desc=f"Generating predictions on {dataset_path}"):
-        batch_predictions = rag_model.batch_generate_prediction(batch)
+    if batch_size == 1:
+        raise NotImplementedError
+
+    elif batch_size > 1:
+        for batch in tqdm(load_data_in_batches(dataset_path, batch_size), desc=f"Generating predictions on {dataset_path}"):
+            batch_predictions = rag_framework.run_framework(batch)
+            
+            question_ids.extend(batch["question_id"])
+            queries.extend(batch["question_text"])
+            predictions.extend(batch_predictions)
         
-        question_ids.extend(batch["question_id"])
-        queries.extend(batch["question_text"])
-        predictions.extend(batch_predictions)
-    
-    assert len(question_ids) == len(queries) and len(queries) == len(predictions)
+        assert len(question_ids) == len(queries) and len(queries) == len(predictions)
 
-    output_instance = {}
-    for i in range(len(queries)):
-        question_id = question_ids[i]
-        prediction = predictions[i]
+        output_instance = {}
+        for i in range(len(queries)):
+            question_id = question_ids[i]
+            prediction = predictions[i]
 
-        output_instance[question_id] = prediction
+            output_instance[question_id] = prediction
 
-    return output_instance
+        return output_instance
 
 
-def generate_gpt_predictions(dataset_path, rag_model, debug=False):
+def generate_gpt_predictions(
+    dataset_path, 
+    rag_framework, 
+    # debug=False
+):
     """
     Generate predictions using an OpenAI GPT model.
     
     Args:
     dataset_path (str): Path to the dataset.
-    rag_model (object): RAGFramework that provides `batch_generate_prediction()` interfaces.
+    rag_framework (object): RAGFramework that provides `run_gpt()` interfaces.
     
     Returns:
     dict: A dictionary with question_id as key and predictions as value.
@@ -131,7 +139,10 @@ def generate_gpt_predictions(dataset_path, rag_model, debug=False):
         question_id = datum["question_id"]
         question_text = datum["question_text"]
 
-        response = rag_model.run_gpt(query=question_text, debug=debug)
+        response = rag_framework.run_framework(
+            query=question_text, 
+            # debug=debug
+        )
         output_instance[question_id] = response
     
     return output_instance
@@ -147,7 +158,7 @@ def main(args):
     if args.retrieval_corpus_name is None:
         args.retrieval_corpus_name = CORPUS_NAME_DICT[args.dataset]        
 
-    rag = make_rag(args)
+    rag_framework = make_rag_framework(args)
 
     input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.input_directory, args.dataset)
     input_filepath = os.path.join(input_directory, f"{args.dataset_type}.jsonl")
@@ -159,9 +170,17 @@ def main(args):
 
     print(f"run RAG on {args.dataset_type}.jsonl of {args.dataset}")
     if "gpt-3.5" in args.generator_model_name.lower() or "gpt-4" in args.generator_model_name.lower():
-        output_instance = generate_gpt_predictions(input_filepath, rag, debug=args.debug)
+        output_instance = generate_gpt_predictions(
+            input_filepath, 
+            rag_framework, 
+            # debug=args.debug
+        )
     else:
-        output_instance = generate_hf_predictions(input_filepath, rag, batch_size=args.batch_size)
+        output_instance = generate_hf_predictions(
+            input_filepath, 
+            rag_framework, 
+            batch_size=args.batch_size
+        )
 
     write_json(output_instance, output_filepath)
 
