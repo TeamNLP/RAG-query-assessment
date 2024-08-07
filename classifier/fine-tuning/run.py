@@ -245,10 +245,6 @@ def main():
                 # logging & evaluation strategies
                 logging_dir=f"{args.output_dir}/logs",
                 logging_strategy=args.logging_strategy, 
-<<<<<<< HEAD
-=======
-                logging_steps=args.logging_steps,
->>>>>>> 27309e5c3f24bcc1a765fdd9fb40013bf8cd3d38
                 evaluation_strategy=args.evaluation_strategy,
                 save_strategy=args.save_strategy,
                 save_total_limit=args.save_total_limit,
