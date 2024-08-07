@@ -27,15 +27,12 @@ do
         --use_earlystopping \
         --early_stopping_patience 3 \
         --output_dir classifier/model/${REPOSITORY_ID} \
-        --logging_strategy steps \
-        --logging_steps 500 \
-        --save_steps 500 \
-        --eval_steps 500 \
+        --logging_strategy "epoch" \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --learning_rate 3e-4 \
-        --evaluation_strategy "steps" \
-        --save_strategy "steps" \
+        --evaluation_strategy "epoch" \
+        --save_strategy "epoch" \
         --save_total_limit 3 \
         --load_best_model_at_end \
         --push_to_hub \
