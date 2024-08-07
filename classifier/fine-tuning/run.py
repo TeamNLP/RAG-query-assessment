@@ -12,6 +12,7 @@ from huggingface_hub import HfFolder
 from loguru import logger
 from transformers import Trainer, TrainingArguments
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
+from transformers import EarlyStoppingCallback
 from utils import load_model, load_ft_dataset, compute_metrics
 
 
@@ -107,6 +108,17 @@ def parse_args():
         help="Total number of training epochs to perform."
     )
     parser.add_argument(
+        "--use_earlystopping",
+        action="store_true",
+        help="If passed, will use a EarlyStoppingCallback.",
+    )
+    parser.add_argument(
+        "--early_stopping_patience",
+        type=int,
+        default=2,
+        help="To stop training when the specified metric worsens for `early_stopping_patience` evaluation calls.",
+    )
+    parser.add_argument(
         "--output_dir", 
         type=str, 
         default=None, 
@@ -149,6 +161,27 @@ def parse_args():
         type=float,
         default=5e-5,
         help="Initial learning rate (after the potential warmup period) to use.",
+    )
+    parser.add_argument(
+        "--save_steps",
+        type=int,
+        default=500,
+        help="Number of updates steps before two checkpoint saves if `save_strategy=\"steps\"`. Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.",
+    )
+    parser.add_argument(
+        "--eval_steps",
+        type=int,
+        default=None,
+        help="Number of update steps between two evaluations if `eval_strategy=\"steps\"`. Will default to the same value as logging_steps if not set. Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps."
+    )
+    parser.add_argument(
+        "--evaluation_strategy", 
+        type=str, 
+        default="steps", 
+        help="""The evaluation strategy to adopt during evaluation. Possible values are:
+- `"no"`: No save is done during training.
+- `"epoch"`: Save is done at the end of each epoch.
+- `"steps"`: Save is done every `save_steps`."""
     )
     parser.add_argument(
         "--save_strategy", 
@@ -233,6 +266,8 @@ def main():
                 logging_steps=args.logging_steps,
                 save_strategy=args.save_strategy,
                 save_total_limit=args.save_total_limit,
+                save_steps=args.save_steps,
+                eval_steps=args.eval_steps,
                 load_best_model_at_end=args.load_best_model_at_end,
 
                 # push to hub parameters
@@ -242,21 +277,40 @@ def main():
             )
 
             # Create Trainer instance
-            if args.do_eval:
-                trainer = Trainer(
-                    model=model,
-                    args=training_args,
-                    train_dataset=tokenized_dataset["train"],
-                    eval_dataset=tokenized_dataset["validation"],
-                    compute_metrics=compute_metrics,
-                )
+            if args.use_earlystopping:
+                if args.do_eval:
+                    trainer = Trainer(
+                        model=model,
+                        args=training_args,
+                        train_dataset=tokenized_dataset["train"],
+                        eval_dataset=tokenized_dataset["validation"],
+                        compute_metrics=compute_metrics,
+                        callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+                    )
+                else:
+                    trainer = Trainer(
+                        model=model,
+                        args=training_args,
+                        train_dataset=tokenized_dataset["train"],
+                        compute_metrics=compute_metrics,
+                        callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+                    )
             else:
-                trainer = Trainer(
-                    model=model,
-                    args=training_args,
-                    train_dataset=tokenized_dataset["train"],
-                    compute_metrics=compute_metrics,
-                )
+                if args.do_eval:
+                    trainer = Trainer(
+                        model=model,
+                        args=training_args,
+                        train_dataset=tokenized_dataset["train"],
+                        eval_dataset=tokenized_dataset["validation"],
+                        compute_metrics=compute_metrics,
+                    )
+                else:
+                    trainer = Trainer(
+                        model=model,
+                        args=training_args,
+                        train_dataset=tokenized_dataset["train"],
+                        compute_metrics=compute_metrics,
+                    )
 
         elif args.model_type == "AutoModelForSeq2Seq":
             raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
