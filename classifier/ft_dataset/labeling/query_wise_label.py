@@ -82,11 +82,16 @@ def main(args):
     dump_json(labeled_dataset, result_file_path)
 
     # train_test_split
-    train_dataset, valid_dataset = train_test_split(labeled_dataset, test_size=0.2, shuffle=True, stratify=None, random_state=args.seed)
+    train_dataset, valid_and_test_dataset = train_test_split(labeled_dataset, test_size=0.4, shuffle=True, stratify=None, random_state=args.seed)
+    valid_dataset, test_dataset = train_test_split(valid_and_test_dataset, test_size=0.5, shuffle=True, stratify=None, random_state=args.seed)
+
     train_result_file_path = os.path.join(args.result_dataset_path, "ft_dataset_train.json")
     valid_result_file_path = os.path.join(args.result_dataset_path, "ft_dataset_valid.json")
+    test_result_file_path = os.path.join(args.result_dataset_path, "ft_dataset_test.json")
+    
     dump_json(train_dataset, train_result_file_path)
     dump_json(valid_dataset, valid_result_file_path)
+    dump_json(test_dataset, test_result_file_path)
 
 
 if __name__ == "__main__":

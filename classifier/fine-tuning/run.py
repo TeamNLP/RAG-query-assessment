@@ -246,6 +246,7 @@ def main():
                 logging_dir=f"{args.output_dir}/logs",
                 logging_strategy=args.logging_strategy, 
                 evaluation_strategy=args.evaluation_strategy,
+                metric_for_best_model='eval_f1',
                 save_strategy=args.save_strategy,
                 save_total_limit=args.save_total_limit,
                 load_best_model_at_end=args.load_best_model_at_end,
@@ -348,11 +349,36 @@ def main():
         trainer.push_to_hub()
 
         if args.do_eval:
+            if args.model_type == "AutoModelForSequenceClassification":
+                trained_trainer = Trainer(
+                    model=args.hub_model_id,
+                    args=training_args,
+                    train_dataset=tokenized_dataset["train"],
+                    eval_dataset=tokenized_dataset["validation"],
+                    compute_metrics=compute_metrics,
+                    callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+                )
+            elif args.model_type == "AutoModelForSeq2Seq":
+                raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
+            else:
+                raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
+
             trainer.evaluate()
     
     if args.do_predict:
-        raise NotImplementedError("`do_predict` is not implemented yet.")
-
+        if args.model_type == "AutoModelForSequenceClassification":
+            trained_trainer = Trainer(
+                model=args.hub_model_id,
+                args=training_args,
+                train_dataset=tokenized_dataset["train"],
+                eval_dataset=tokenized_dataset["test"],
+                compute_metrics=compute_metrics,
+                callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+            )
+        elif args.model_type == "AutoModelForSeq2Seq":
+            raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
+        else:
+            raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
 
 
 if __name__ == "__main__":
