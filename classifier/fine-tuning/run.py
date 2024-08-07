@@ -217,129 +217,129 @@ def main():
     model, tokenizer = load_model(args)
     tokenized_dataset = load_ft_dataset(args)
 
-    if args.do_train:
-        if args.hub_token is not None and args.hub_token.lower() == "none":
-            args.hub_token = None
-        if args.hub_token is not None:
-            user_hub_token = args.hub_token
-        else:
-            try:
-                user_hub_token = HfFolder.get_token()
-            except:
-                user_hub_token = None
-        
-        if user_hub_token is None:
-            args.hub_model_id = None
-            args.push_to_hub = False
+    if args.hub_token is not None and args.hub_token.lower() == "none":
+        args.hub_token = None
+    if args.hub_token is not None:
+        user_hub_token = args.hub_token
+    else:
+        try:
+            user_hub_token = HfFolder.get_token()
+        except:
+            user_hub_token = None
+    
+    if user_hub_token is None:
+        args.hub_model_id = None
+        args.push_to_hub = False
 
-        if args.model_type == "AutoModelForSequenceClassification":
-            # Define training args
-            training_args = TrainingArguments(
-                num_train_epochs=args.num_train_epochs,
-                output_dir=args.output_dir,
-                per_device_train_batch_size=args.per_device_train_batch_size,
-                per_device_eval_batch_size=args.per_device_eval_batch_size,
-                fp16=args.use_fp16,
-                learning_rate=args.learning_rate,
+    if args.model_type == "AutoModelForSequenceClassification":
+        # Define training args
+        training_args = TrainingArguments(
+            num_train_epochs=args.num_train_epochs,
+            output_dir=args.output_dir,
+            per_device_train_batch_size=args.per_device_train_batch_size,
+            per_device_eval_batch_size=args.per_device_eval_batch_size,
+            fp16=args.use_fp16,
+            learning_rate=args.learning_rate,
 
-                # logging & evaluation strategies
-                logging_dir=f"{args.output_dir}/logs",
-                logging_strategy=args.logging_strategy, 
-                evaluation_strategy=args.evaluation_strategy,
-                metric_for_best_model='eval_f1',
-                save_strategy=args.save_strategy,
-                save_total_limit=args.save_total_limit,
-                load_best_model_at_end=args.load_best_model_at_end,
+            # logging & evaluation strategies
+            logging_dir=f"{args.output_dir}/logs",
+            logging_strategy=args.logging_strategy, 
+            evaluation_strategy=args.evaluation_strategy,
+            metric_for_best_model='eval_f1',
+            save_strategy=args.save_strategy,
+            save_total_limit=args.save_total_limit,
+            load_best_model_at_end=args.load_best_model_at_end,
 
-                # push to hub parameters
-                push_to_hub=args.push_to_hub,
-                hub_model_id=args.hub_model_id,
-                hub_token=user_hub_token
-            )
+            # push to hub parameters
+            push_to_hub=args.push_to_hub,
+            hub_model_id=args.hub_model_id,
+            hub_token=user_hub_token
+        )
 
-            # Create Trainer instance
-            if args.use_earlystopping:
-                if args.do_eval:
-                    trainer = Trainer(
-                        model=model,
-                        args=training_args,
-                        train_dataset=tokenized_dataset["train"],
-                        eval_dataset=tokenized_dataset["validation"],
-                        compute_metrics=compute_metrics,
-                        callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
-                    )
-                else:
-                    trainer = Trainer(
-                        model=model,
-                        args=training_args,
-                        train_dataset=tokenized_dataset["train"],
-                        compute_metrics=compute_metrics,
-                        callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
-                    )
-            else:
-                if args.do_eval:
-                    trainer = Trainer(
-                        model=model,
-                        args=training_args,
-                        train_dataset=tokenized_dataset["train"],
-                        eval_dataset=tokenized_dataset["validation"],
-                        compute_metrics=compute_metrics,
-                    )
-                else:
-                    trainer = Trainer(
-                        model=model,
-                        args=training_args,
-                        train_dataset=tokenized_dataset["train"],
-                        compute_metrics=compute_metrics,
-                    )
-
-        elif args.model_type == "AutoModelForSeq2Seq":
-            raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
-
-            # Define training args
-            training_args = Seq2SeqTrainingArguments(
-                num_train_epochs=args.num_train_epochs,
-                output_dir=args.output_dir,
-                per_device_train_batch_size=args.per_device_train_batch_size,
-                per_device_eval_batch_size=args.per_device_eval_batch_size,
-                fp16=args.fp16,
-                learning_rate=args.learning_rate,
-
-                # logging & evaluation strategies
-                logging_dir=f"{args.output_dir}/logs",
-                logging_strategy=args.logging_strategy, 
-                save_strategy=args.save_strategy,
-                save_total_limit=args.save_total_limit,
-                load_best_model_at_end=args.load_best_model_at_end,
-
-                # push to hub parameters
-                push_to_hub=args.push_to_hub,
-                hub_model_id=args.hub_model_id,
-                hub_token=user_hub_token
-            )
-
-            # Create Trainer instance
+        # Create Trainer instance
+        if args.use_earlystopping:
             if args.do_eval:
-                trainer = Seq2SeqTrainer(
+                trainer = Trainer(
                     model=model,
                     args=training_args,
-                    data_collator=data_collator,
+                    train_dataset=tokenized_dataset["train"],
+                    eval_dataset=tokenized_dataset["validation"],
+                    compute_metrics=compute_metrics,
+                    callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+                )
+            else:
+                trainer = Trainer(
+                    model=model,
+                    args=training_args,
+                    train_dataset=tokenized_dataset["train"],
+                    compute_metrics=compute_metrics,
+                    callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+                )
+        else:
+            if args.do_eval:
+                trainer = Trainer(
+                    model=model,
+                    args=training_args,
                     train_dataset=tokenized_dataset["train"],
                     eval_dataset=tokenized_dataset["validation"],
                     compute_metrics=compute_metrics,
                 )
             else:
-                trainer = Seq2SeqTrainer(
+                trainer = Trainer(
                     model=model,
                     args=training_args,
-                    data_collator=data_collator,
                     train_dataset=tokenized_dataset["train"],
                     compute_metrics=compute_metrics,
                 )
 
-        else:
-            raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
+    elif args.model_type == "AutoModelForSeq2Seq":
+        raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
 
+        # Define training args
+        training_args = Seq2SeqTrainingArguments(
+            num_train_epochs=args.num_train_epochs,
+            output_dir=args.output_dir,
+            per_device_train_batch_size=args.per_device_train_batch_size,
+            per_device_eval_batch_size=args.per_device_eval_batch_size,
+            fp16=args.fp16,
+            learning_rate=args.learning_rate,
+
+            # logging & evaluation strategies
+            logging_dir=f"{args.output_dir}/logs",
+            logging_strategy=args.logging_strategy, 
+            save_strategy=args.save_strategy,
+            save_total_limit=args.save_total_limit,
+            load_best_model_at_end=args.load_best_model_at_end,
+
+            # push to hub parameters
+            push_to_hub=args.push_to_hub,
+            hub_model_id=args.hub_model_id,
+            hub_token=user_hub_token
+        )
+
+        # Create Trainer instance
+        if args.do_eval:
+            trainer = Seq2SeqTrainer(
+                model=model,
+                args=training_args,
+                data_collator=data_collator,
+                train_dataset=tokenized_dataset["train"],
+                eval_dataset=tokenized_dataset["validation"],
+                compute_metrics=compute_metrics,
+            )
+        else:
+            trainer = Seq2SeqTrainer(
+                model=model,
+                args=training_args,
+                data_collator=data_collator,
+                train_dataset=tokenized_dataset["train"],
+                compute_metrics=compute_metrics,
+            )
+
+    else:
+        raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
+
+    if args.do_train:
         # Start training 
         trainer.train()
 
@@ -348,30 +348,15 @@ def main():
         trainer.create_model_card()
         trainer.push_to_hub()
 
-        if args.do_eval:
-            if args.model_type == "AutoModelForSequenceClassification":
-                trained_trainer = Trainer(
-                    model=args.hub_model_id,
-                    args=training_args,
-                    train_dataset=tokenized_dataset["train"],
-                    eval_dataset=tokenized_dataset["validation"],
-                    compute_metrics=compute_metrics,
-                    callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
-                )
-            elif args.model_type == "AutoModelForSeq2Seq":
-                raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
-            else:
-                raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
-
-            trainer.evaluate()
-    
-    if args.do_predict:
+    if args.do_eval:
+        args.model_name_or_path = f"oneonlee/{args.hub_model_id}"
+        trained_model, _ = load_model(args)
         if args.model_type == "AutoModelForSequenceClassification":
             trained_trainer = Trainer(
-                model=args.hub_model_id,
+                model=trained_model,
                 args=training_args,
                 train_dataset=tokenized_dataset["train"],
-                eval_dataset=tokenized_dataset["test"],
+                eval_dataset=tokenized_dataset["validation"],
                 compute_metrics=compute_metrics,
                 callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
             )
@@ -380,6 +365,30 @@ def main():
         else:
             raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
 
+        eval_results = trained_trainer.evaluate()
+        print("Validation results", eval_results)
+    
+    if args.do_predict:
+        if args.model_type == "AutoModelForSequenceClassification":
+            args.model_name_or_path = f"oneonlee/{args.hub_model_id}"
+            trained_model, _ = load_model(args)
+            if args.model_type == "AutoModelForSequenceClassification":
+                trained_trainer = Trainer(
+                    model=trained_model,
+                    args=training_args,
+                    train_dataset=tokenized_dataset["train"],
+                    eval_dataset=tokenized_dataset["test"],
+                    compute_metrics=compute_metrics,
+                    callbacks = [EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)]
+                )
+        elif args.model_type == "AutoModelForSeq2Seq":
+            raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
+        else:
+            raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
+
+        trained_trainer.evaluate()
+        eval_results = trained_trainer.evaluate()
+        print("Test results", eval_results)
 
 if __name__ == "__main__":
     main()
