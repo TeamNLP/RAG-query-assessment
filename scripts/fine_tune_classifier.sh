@@ -18,10 +18,12 @@ do
     python classifier/fine-tuning/run.py \
         --do_train \
         --do_eval \
+        --do_predict \
         --model_name_or_path $model_path \
         --model_type AutoModelForSequenceClassification \
         --train_file classifier/ft_dataset/ft_dataset_train.json \
         --validation_file classifier/ft_dataset/ft_dataset_valid.json \
+        --test_file classifier/ft_dataset/ft_dataset_test.json \
         --seed ${SEED} \
         --num_train_epochs ${EPOCHS} \
         --use_earlystopping \
