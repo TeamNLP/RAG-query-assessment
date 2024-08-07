@@ -1,13 +1,13 @@
 # QWER
 
-```bash
+```
 ├── classifier
 │   ├── fine-tuning
 │   ├── ft_dataset
+│   │   ├── evaluation
+│   │   │   ├── metric
+│   │   │   └── result
 │   │   ├── labeling
-│   │   │   └── auto_evaluation
-│   │   │       ├── prompts
-│   │   │       └── result
 │   │   ├── predictions
 │   │   └── source
 │   └── model
@@ -54,8 +54,8 @@ sh scripts/env_setup.sh
 
 ### Classifier
 ```bash
-sh scripts/CRAG_evaluate_for_labeling.sh
-sh scripts/label_ft_dataset.sh
+sh scripts/query_wise_evaluate.sh
+sh scripts/query_wise_label.sh
 sh scripts/fine_tune_classifier.sh
 ```
 

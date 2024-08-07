@@ -18,7 +18,8 @@ args = parser.parse_args()
 DATASET_LIST = [
     "hotpotqa-train-distractor-stratified-v1.0",
     "msmarco-train-v2.1-stratified-v1.0",
-    "squad-train-v2.0-stratified_v1.0"
+    "squad-train-v2.0-stratified-v1.0",
+    "asqa-train-stratified-v1.0"
 ]
 
 
