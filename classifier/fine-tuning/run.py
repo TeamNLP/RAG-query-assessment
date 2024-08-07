@@ -264,6 +264,7 @@ def main():
                 logging_dir=f"{args.output_dir}/logs",
                 logging_strategy=args.logging_strategy, 
                 logging_steps=args.logging_steps,
+                evaluation_strategy=args.evaluation_strategy,
                 save_strategy=args.save_strategy,
                 save_total_limit=args.save_total_limit,
                 save_steps=args.save_steps,
