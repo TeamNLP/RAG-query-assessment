@@ -5,8 +5,8 @@ from transformers import pipeline
 
 class Classifier:
     def __init__(self, model_name, device=None):
-        if device=None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if device == None:
+            self.device = torch.device('cuda')
         else:
             self.device = torch.device(device)
 

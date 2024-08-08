@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # # use template with instruction
-# for classifier_model_path oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
+# for classifier_model_path in oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
 # do
 #     classifier_suffix=${model_path#*/}
 
@@ -28,11 +28,11 @@
 # done
 
 # use_template_wo_instruction
-for classifier_model_path oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
+for classifier_model_path in oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
 do
     classifier_suffix=${model_path#*/}
 
-    for model_path in meta-llama/Meta-Llama-3.1-8B meta-llama/Meta-Llama-3.1-8B-Instruct meta-llama/Meta-Llama-3-8B meta-llama/Meta-Llama-3-8B-Instruct
+    for model_path in meta-llama/Meta-Llama-3.1-8B meta-llama/Meta-Llama-3-8B 
     do
         model_suffix=${model_path#*/}
 
@@ -47,7 +47,7 @@ do
                 --dataset $dataset \
                 --dataset_type test_subsampled \
                 --retrieval_top_n 5 \
-                --batch_size 128 \
+                --batch_size 64 \
                 --temperature 0 \
                 --use_template_wo_instruction \
                 --generator_model_name $model_path
@@ -56,7 +56,7 @@ do
 done
 
 # use_chat_template
-for classifier_model_path oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
+for classifier_model_path in oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
 do
     classifier_suffix=${model_path#*/}
 
@@ -75,7 +75,7 @@ do
                 --dataset $dataset \
                 --dataset_type test_subsampled \
                 --retrieval_top_n 5 \
-                --batch_size 128 \
+                --batch_size 64 \
                 --temperature 0 \
                 --use_chat_template \
                 --generator_model_name $model_path
