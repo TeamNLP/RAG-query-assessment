@@ -3,9 +3,9 @@ import requests
 from typing import List, Tuple, Dict, Optional, Union, Any
 
 import vllm
+from model.framework import Framework
+from model.prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_WO_INST, RAG_PROMPT_TEMPLATE_SUFFIX
 from openai import OpenAI
-from framework import Framework
-from prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_WO_INST, RAG_PROMPT_TEMPLATE_SUFFIX
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 

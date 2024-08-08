@@ -1,10 +1,11 @@
 import os
 from typing import Union, Any, Dict, List
 
-from classifier import Classifier
+from model.classifier import Classifier
+from model.prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_3, INPUT_TEMPLATE_METHOD_3
+from model.RAG import RAGFramework, Retriever, Generator
+from model.rewriter import Rewriter
 from openai import OpenAI
-from prompt_templates import REWRITER_GENERAL_SYSTEM_PROMPT, REWRITE_PROMPT_METHOD_3, INPUT_TEMPLATE_METHOD_3
-from RAG import RAGFramework
 
 REWRITE_PROMPT = REWRITE_PROMPT_METHOD_3
 INPUT_PROMPT = INPUT_TEMPLATE_METHOD_3
@@ -42,9 +43,9 @@ class QWERFramework(RAGFramework):
                     pass
 
         if self.generator.use_hf == True:
-            output = run_hf(query)
+            output = self.run_hf(query)
         elif self.generator.use_hf == False:
-            output = run_gpt(query)
+            output = self.run_gpt(query)
 
         return output
 
