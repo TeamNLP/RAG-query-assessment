@@ -51,11 +51,18 @@ class QWERFramework(RAGFramework):
 
 
 def make_qwer_framework(args):
+    if torch.cuda.is_available() and torch.cuda.device_count() >= 2:
+        all_device = "0"
+        for n in range(1, torch.cuda.device_count()):
+            all_device += f",{n}"
+        classifier_device = str(1)
+        generator_device = str(0)
+
     openai_api_key = os.environ.get('OPENAI_API_KEY')
     openai_client = OpenAI(api_key=openai_api_key)
 
     # Classifier
-    classifier = Classifier(args.classifier_model_name)
+    classifier = Classifier(args.classifier_model_name, device=classifier_device)
     
     # Rewriter
     rewriter = Rewriter(
@@ -80,6 +87,7 @@ def make_qwer_framework(args):
     else:
         openai_client = None
 
+    os.environ["CUDA_VISIBLE_DEVICES"] = generator_device
     generator = Generator(
         model_name=args.generator_model_name, 
         generator_config={
@@ -97,6 +105,7 @@ def make_qwer_framework(args):
         },
         openai_client=openai_client
     )
+    os.environ["CUDA_VISIBLE_DEVICES"] = all_device
 
     # QWER framework 
     qwer_framework = QWERFramework(classifier, rewriter, retriever, generator)
