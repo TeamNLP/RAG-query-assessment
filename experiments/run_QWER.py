@@ -96,10 +96,10 @@ def generate_hf_predictions(dataset_path, qwer_framework, batch_size=2):
     """
     question_ids, queries, predictions = [], [], []
 
-    if batch_size == 1:
-        raise NotImplementedError
+    # if batch_size == 1:
+        # raise NotImplementedError
 
-    elif batch_size > 1:
+    if batch_size > 1 or batch_size == 1:
         for batch in tqdm(load_data_in_batches(dataset_path, batch_size), desc=f"Generating predictions on {dataset_path}"):
             batch_predictions = qwer_framework.run_framework(batch)
             
