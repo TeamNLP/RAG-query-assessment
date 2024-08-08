@@ -30,8 +30,8 @@ class Framework:
         query: Union[str, Dict[str, Any]]
     ) -> Union[str, List[str]]:
         if self.generator.use_hf == True:
-            output = run_hf(query)
+            output = self.run_hf(query)
         elif self.generator.use_hf == False:
-            output = run_gpt(query)
+            output = self.run_gpt(query)
 
         return output
