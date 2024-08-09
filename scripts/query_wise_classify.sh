@@ -1,6 +1,8 @@
 #!/bin/bash
 
-for classifier_model_path in oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
+# for classifier_model_path in oneonlee/flan-t5-small-query_level_estimator_3e-5-new_0.5 oneonlee/flan-t5-small-query_level_estimator_3e-5-new_0.6
+for classifier_model_path in oneonlee/flan-t5-xl-query_level_estimator_5e-5
+# for classifier_model_path in oneonlee/flan-t5-small-query_level_estimator_3e-5 oneonlee/flan-t5-xl-query_level_estimator
 do
     classifier_suffix=${classifier_model_path#*/}
     echo "classifier_model_path: $classifier_model_path"

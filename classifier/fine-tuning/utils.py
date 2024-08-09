@@ -33,7 +33,9 @@ def load_model(args):
                 args.config_name, 
                 num_labels=len(label2id),
                 id2label=id2label,
-                label2id=label2id
+                label2id=label2id,
+                hidden_dropout_prob=args.hidden_dropout_prob,  # Dropout
+                attention_probs_dropout_prob=args.attention_probs_dropout_prob  # Attention Dropout
             )
         elif args.model_type == "AutoModelForSeq2SeqLM":
             config = AutoConfig.from_pretrained(args.config_name)
@@ -45,7 +47,9 @@ def load_model(args):
                 args.model_name_or_path, 
                 num_labels=len(label2id),
                 id2label=id2label,
-                label2id=label2id
+                label2id=label2id,
+                hidden_dropout_prob=args.hidden_dropout_prob,  # Dropout
+                attention_probs_dropout_prob=args.attention_probs_dropout_prob  # Attention Dropout
             )
         elif args.model_type == "AutoModelForSeq2SeqLM":
             config = AutoConfig.from_pretrained(args.model_name_or_path)

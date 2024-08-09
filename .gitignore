@@ -1,6 +1,8 @@
 api_responses/
 data
 classifier/model/
+classifier/ft_dataset/new_*
+classifier/ft_dataset/original
 classifier/ft_dataset/source/*
 !classifier/ft_dataset/source/sample.jsonl
 classifier/ft_dataset/predictions/*
