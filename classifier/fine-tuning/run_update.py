@@ -7,7 +7,10 @@ https://github.com/starsuzi/Adaptive-RAG/blob/main/classifier/run/run_large_trai
 """
 
 import argparse
+import os
 
+import matplotlib.pyplot as plt
+import numpy as np
 from huggingface_hub import HfFolder
 from loguru import logger
 from transformers import Trainer, TrainingArguments
@@ -233,6 +236,64 @@ If `"epoch"` or `"steps"` is chosen, saving will also be performed at the very e
     return args
 
 
+def plot_metrics(log_history, output_dir):
+    """
+    Plot train loss, validation loss, and validation F1 score.
+    """
+    epochs = []
+    train_losses = []
+    eval_losses = []
+    eval_f1 = []
+
+    for entry in log_history:
+        if 'epoch' in entry:
+            epoch = entry['epoch']
+            if 'loss' in entry:
+                if epoch not in epochs:
+                    epochs.append(epoch)
+                train_losses.append(entry['loss'])
+            if 'eval_loss' in entry:
+                if epoch not in epochs:
+                    epochs.append(epoch)
+                eval_losses.append(entry['eval_loss'])
+            if 'eval_f1' in entry:
+                if epoch not in epochs:
+                    epochs.append(epoch)
+                eval_f1.append(entry['eval_f1'])
+
+    # Ensure the lists are sorted by epoch
+    sorted_indices = sorted(range(len(epochs)), key=lambda k: epochs[k])
+    epochs = [epochs[i] for i in sorted_indices]
+    train_losses = [train_losses[i] for i in sorted_indices]
+    eval_losses = [eval_losses[i] for i in sorted_indices]
+    eval_f1 = [eval_f1[i] for i in sorted_indices]
+
+    # Create figure and axis
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    # Plot train loss
+    ax1.plot(epochs, train_losses, 'b-', label='Train Loss')
+    ax1.plot(epochs, eval_losses, 'r--', label='Validation Loss')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.legend(loc='upper left')
+    
+    # Plot validation F1 on a separate figure
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    ax2.plot(epochs, eval_f1, 'g-', label='Validation F1')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Validation F1')
+    ax2.legend(loc='upper left')
+
+    # Save plots
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    fig.savefig(os.path.join(output_dir, 'losses.png'))
+    fig2.savefig(os.path.join(output_dir, 'f1_scores.png'))
+    plt.close(fig)
+    plt.close(fig2)
+    
+
 def main():
     args = parse_args()
     logger.info(args)
@@ -338,6 +399,7 @@ def main():
         metrics = trainer.evaluate()
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
+        plot_metrics(trainer.state.log_history, args.output_dir)
 
     if args.do_predict:
         logger.info("*** Predict ***")
