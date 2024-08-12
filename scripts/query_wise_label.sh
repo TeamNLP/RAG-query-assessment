@@ -4,8 +4,7 @@
 python classifier/ft_dataset/labeling/query_wise_label.py \
     --seed 13370 \
     --eval_result_path classifier/ft_dataset/evaluation/result \
-    --large_performance_threshold 0.5 \
-    --small_performance_threshold 0.5 \
+    --threshold_strategy 0.5 \
     --train_ratio 80 \
     --valid_ratio 10 \
     --test_ratio 10 \
@@ -15,8 +14,7 @@ python classifier/ft_dataset/labeling/query_wise_label.py \
 python classifier/ft_dataset/labeling/query_wise_label.py \
     --seed 13370 \
     --eval_result_path classifier/ft_dataset/evaluation/result \
-    --large_performance_threshold 0.6 \
-    --small_performance_threshold 0.6 \
+    --threshold_strategy 0.6 \
     --train_ratio 80 \
     --valid_ratio 10 \
     --test_ratio 10 \
@@ -27,8 +25,7 @@ python classifier/ft_dataset/labeling/query_wise_label.py \
 python classifier/ft_dataset/labeling/query_wise_label.py \
     --seed 13370 \
     --eval_result_path classifier/ft_dataset/evaluation/result \
-    --large_performance_threshold 0.597903395 \
-    --small_performance_threshold 0.5325510946 \
+    --threshold_strategy mean \
     --train_ratio 80 \
     --valid_ratio 10 \
     --test_ratio 10 \
@@ -39,8 +36,7 @@ python classifier/ft_dataset/labeling/query_wise_label.py \
 python classifier/ft_dataset/labeling/query_wise_label.py \
     --seed 13370 \
     --eval_result_path classifier/ft_dataset/evaluation/result \
-    --large_performance_threshold 0.5448701895 \
-    --small_performance_threshold 0.48292825 \
+    --threshold_strategy median \
     --train_ratio 80 \
     --valid_ratio 10 \
     --test_ratio 10 \

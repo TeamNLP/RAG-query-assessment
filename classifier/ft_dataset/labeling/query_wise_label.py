@@ -3,6 +3,7 @@ import json
 import os
 from statistics import mean
 
+import numpy as np
 from typing import List, Dict
 from lib import read_jsonl, dump_json
 from sklearn.model_selection import train_test_split
@@ -10,8 +11,7 @@ from sklearn.model_selection import train_test_split
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=13370, help="A seed for reproducible training.")
 parser.add_argument('--eval_result_path', type=str, default="classifier/ft_dataset/evaluation/result", help="A directory path where the evaluation results are stored")
-parser.add_argument('--large_performance_threshold', type=float, default=0.5, help="A threshold for performance of the Large model")
-parser.add_argument('--small_performance_threshold', type=float, default=0.5, help="A threshold for performance of the Small model")
+parser.add_argument('--threshold_strategy', type=str, default="0.5", help="A threshold strategy for performance of the Large & Small models. Support for `'median'`, `'mean'`(`'avg'`, `'average'`), `'0.5'`, `'0.6'`, etc.")
 parser.add_argument('--train_ratio', type=float, default=60, help="A ratio of train set")
 parser.add_argument('--valid_ratio', type=float, default=20, help="A ratio of validation set")
 parser.add_argument('--test_ratio', type=float, default=20, help="A ratio of test set")
@@ -25,6 +25,34 @@ DATASET_LIST = [
     "squad-train-v2.0-stratified-v1.1",
     "asqa-train-stratified-v1.1"
 ]
+
+def is_float(input_string):
+    try:
+        float_value = float(input_string)
+        return True
+    except ValueError:
+        return False
+
+
+def get_thresholds(
+    args, 
+    eval_result: List[Dict]
+) -> List[float]:
+    if is_float(args.threshold_strategy):
+        thresholds=[float(args.threshold_strategy), float(args.threshold_strategy)]
+    else:
+        large_scores = []
+        small_scores = []
+        for result_dict in eval_result:
+            large_scores.append(mean([result_dict["large_evaluation"]["f1_score"], result_dict["large_evaluation"]["bertscore"]]))
+            small_scores.append(mean([result_dict["small_evaluation"]["f1_score"], result_dict["small_evaluation"]["bertscore"]]))
+
+        if args.threshold_strategy in ["median", "medium"]:
+            thresholds = [np.median(large_scores), np.median(small_scores)]
+        elif args.threshold_strategy in ["mean", "avg", "average"]:
+            thresholds = [np.mean(large_scores), np.mean(small_scores)]
+
+    return thresholds
 
 
 def categorize_score(
@@ -110,7 +138,8 @@ def main(args):
         eval_result_instances.extend(instances)
     print(f"Total length of dataset: {len(eval_result_instances)}")
 
-    categorized_result = categorize_score(eval_result_instances, args.large_performance_threshold, args.small_performance_threshold)
+    large_threshold, small_threshold = get_thresholds(args, eval_result_instances)
+    categorized_result = categorize_score(eval_result_instances, large_threshold, small_threshold)
     labeled_dataset = query_wise_label(categorized_result)
 
     result_file_path = os.path.join(args.result_dataset_path, "ft_dataset.json")
