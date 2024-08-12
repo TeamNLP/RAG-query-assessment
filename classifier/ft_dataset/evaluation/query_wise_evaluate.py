@@ -33,7 +33,7 @@ def answer_extractor(potentially_cot: str) -> str:
     if potentially_cot.startswith('"') and potentially_cot.endswith('"'):
         potentially_cot = potentially_cot[1:-1]
 
-    cot_regex = re.compile(".* answer is:? (.*)\\.?")
+    cot_regex = re.compile(".* answer is\s?:? ((.|\n)*)\\.?")
     match = cot_regex.match(potentially_cot)
     if match:
         output = match.group(1)
@@ -42,7 +42,7 @@ def answer_extractor(potentially_cot: str) -> str:
     else:
         output = potentially_cot
 
-    return output
+    return output.strip()
 
 
 def load_result_dicts(
