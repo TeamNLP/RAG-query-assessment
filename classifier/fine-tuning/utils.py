@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import torch
 from datasets import load_dataset
@@ -29,28 +31,40 @@ def load_model(args):
 
     if args.config_name:
         if args.model_type == "AutoModelForSequenceClassification":
-            config = AutoConfig.from_pretrained(
-                args.config_name, 
-                num_labels=len(label2id),
-                id2label=id2label,
-                label2id=label2id,
-                hidden_dropout_prob=args.hidden_dropout_prob,  # Dropout
-                attention_probs_dropout_prob=args.attention_probs_dropout_prob  # Attention Dropout
-            )
+            if args.do_train:
+                config = AutoConfig.from_pretrained(
+                    args.config_name, 
+                    num_labels=len(label2id),
+                    id2label=id2label,
+                    label2id=label2id,
+                    hidden_dropout_prob=args.hidden_dropout_prob,  # Dropout
+                    attention_probs_dropout_prob=args.attention_probs_dropout_prob  # Attention Dropout
+                )
+            else:
+                config = AutoConfig.from_pretrained(
+                    args.config_name,
+                    num_labels=2,
+                )
         elif args.model_type == "AutoModelForSeq2SeqLM":
             config = AutoConfig.from_pretrained(args.config_name)
         else:
             raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
     elif args.model_name_or_path:
         if args.model_type == "AutoModelForSequenceClassification":
-            config = AutoConfig.from_pretrained(
-                args.model_name_or_path, 
-                num_labels=len(label2id),
-                id2label=id2label,
-                label2id=label2id,
-                hidden_dropout_prob=args.hidden_dropout_prob,  # Dropout
-                attention_probs_dropout_prob=args.attention_probs_dropout_prob  # Attention Dropout
-            )
+            if args.do_train:
+                config = AutoConfig.from_pretrained(
+                    args.model_name_or_path, 
+                    num_labels=len(label2id),
+                    id2label=id2label,
+                    label2id=label2id,
+                    hidden_dropout_prob=args.hidden_dropout_prob,  # Dropout
+                    attention_probs_dropout_prob=args.attention_probs_dropout_prob  # Attention Dropout
+                )
+            else:
+                config = AutoConfig.from_pretrained(
+                    args.model_name_or_path,
+                    num_labels=2,
+                )
         elif args.model_type == "AutoModelForSeq2SeqLM":
             config = AutoConfig.from_pretrained(args.model_name_or_path)
         else:
@@ -72,11 +86,18 @@ def load_model(args):
 
     if args.model_name_or_path:
         if args.model_type == "AutoModelForSequenceClassification":
-            model = AutoModelForSequenceClassification.from_pretrained(
-                args.model_name_or_path,
-                from_tf=bool(".ckpt" in args.model_name_or_path),
-                config=config,
-            ).to(device)
+            if args.do_train:
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    args.model_name_or_path,
+                    from_tf=bool(".ckpt" in args.model_name_or_path),
+                    config=config,
+                ).to(device)
+            else:
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    args.model_name_or_path,
+                    from_tf=bool(".ckpt" in args.model_name_or_path),
+                    config=config,
+                ).to(device)
         elif args.model_type == "AutoModelForSeq2SeqLM":
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 args.model_name_or_path,
@@ -94,8 +115,20 @@ def tokenize_function(examples) -> dict:
     """
     Tokenize the `text` column in the dataset
     """
-
     return tokenizer(examples["text"], padding="max_length", truncation=True)
+
+
+def one_hot_encode_labels(examples, num_labels):
+    """
+    One-hot encode the `label` column in the dataset.
+    """
+    # Convert labels to integer type before one-hot encoding
+    labels = torch.tensor(examples['label'], dtype=torch.int64)
+    one_hot_labels = torch.nn.functional.one_hot(labels, num_classes=num_labels).float()
+    
+    # Convert back to list format for compatibility with HF datasets
+    examples['label'] = one_hot_labels.tolist()
+    return examples
 
 
 def load_ft_dataset(args):
@@ -105,7 +138,7 @@ def load_ft_dataset(args):
     (the dataset will be downloaded automatically from the datasets Hub).
     
     In distributed training:
-    The load_dataset function guarantee that only one local process can concurrently download the dataset.
+    The load_dataset function guarantees that only one local process can concurrently download the dataset.
     """
 
     if args.model_type == "AutoModelForSequenceClassification":
@@ -134,14 +167,17 @@ def load_ft_dataset(args):
                 data_files=data_files,
             )
 
+        # Apply the tokenization
         tokenized_datasets = raw_datasets.map(tokenize_function, batched=True)
+        
+        if args.do_train:
+            pass
+        else:
+            # Apply the one-hot encoding to the labels
+            num_labels = 2  # Assuming binary classification
+            tokenized_datasets = tokenized_datasets.map(lambda x: one_hot_encode_labels(x, num_labels), batched=True)
+        
         return tokenized_datasets
-
-    elif args.model_type == "AutoModelForSeq2Seq":
-        raise NotImplementedError("`AutoModelForSeq2Seq` is not implemented yet.")
-
-    else:
-        raise ValueError("`model_type` should be `AutoModelForSequenceClassification` or `AutoModelForSeq2SeqLM`")
 
 def compute_metrics(eval_pred) -> dict:
     """
@@ -150,14 +186,23 @@ def compute_metrics(eval_pred) -> dict:
 
     logits, labels = eval_pred
 
-    if isinstance(
-        logits, tuple
-    ):  # if the model also returns hidden_states or attentions
+    if isinstance(logits, tuple):  # if the model also returns hidden_states or attentions
         logits = logits[0]
 
+    # Single label (binary or multiclass) classification
     predictions = np.argmax(logits, axis=-1)
+    average = "binary"
+
+    # Compute metrics with appropriate average method
     precision, recall, f1, _ = precision_recall_fscore_support(
-        labels, predictions, average="binary"
+        labels, predictions, average=average
     )
     
     return {"precision": precision, "recall": recall, "f1": f1}
+
+
+def write_json(instance, file_path):
+    with open(file_path, "w") as file:
+        json.dump(instance, file)
+
+

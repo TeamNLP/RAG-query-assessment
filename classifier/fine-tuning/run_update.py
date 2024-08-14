@@ -8,15 +8,19 @@ https://github.com/starsuzi/Adaptive-RAG/blob/main/classifier/run/run_large_trai
 
 import argparse
 import os
+import json
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from huggingface_hub import HfFolder
 from loguru import logger
+from torch.utils.data import DataLoader
 from transformers import Trainer, TrainingArguments
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 from transformers import EarlyStoppingCallback
-from utils import load_model, load_ft_dataset, compute_metrics
+from tqdm import tqdm
+from utils import load_model, load_ft_dataset, compute_metrics, write_json
 
 
 def parse_args():
@@ -124,7 +128,7 @@ def parse_args():
     parser.add_argument(
         "--output_dir", 
         type=str, 
-        default=None, 
+        default="classifier/model", 
         help="The output directory where the model predictions and checkpoints will be written."
     )
     parser.add_argument(
@@ -291,7 +295,7 @@ def plot_metrics(log_history, output_dir):
     fig.savefig(os.path.join(output_dir, 'losses.png'))
     fig2.savefig(os.path.join(output_dir, 'f1_scores.png'))
     plt.close(fig)
-    plt.close(fig2)
+    plt.close
     
 
 def main():
@@ -317,28 +321,31 @@ def main():
         args.push_to_hub = False
 
     if args.model_type == "AutoModelForSequenceClassification":
-        # Define training args
-        training_args = TrainingArguments(
-            num_train_epochs=args.num_train_epochs,
-            output_dir=args.output_dir,
-            per_device_train_batch_size=args.per_device_train_batch_size,
-            per_device_eval_batch_size=args.per_device_eval_batch_size,
-            fp16=args.use_fp16,
-            learning_rate=args.learning_rate,
-            weight_decay=args.weight_decay,  # L2 regularization
+        if args.do_train:
+            # Define training args
+            training_args = TrainingArguments(
+                num_train_epochs=args.num_train_epochs,
+                output_dir=args.output_dir,
+                per_device_train_batch_size=args.per_device_train_batch_size,
+                per_device_eval_batch_size=args.per_device_eval_batch_size,
+                fp16=args.use_fp16,
+                learning_rate=args.learning_rate,
+                weight_decay=args.weight_decay,  # L2 regularization
 
-            # logging & evaluation strategies
-            logging_dir=f"{args.output_dir}/logs",
-            logging_strategy=args.logging_strategy,  # "epoch"
-            evaluation_strategy=args.evaluation_strategy,  # "epoch"
-            save_strategy=args.save_strategy,
-            save_total_limit=args.save_total_limit,
-            load_best_model_at_end=args.load_best_model_at_end,
-            metric_for_best_model="eval_f1",
-            greater_is_better=True,
+                # logging & evaluation strategies
+                logging_dir=f"{args.output_dir}/logs",
+                logging_strategy=args.logging_strategy,  # "epoch"
+                evaluation_strategy=args.evaluation_strategy,  # "epoch"
+                save_strategy=args.save_strategy,
+                save_total_limit=args.save_total_limit,
+                load_best_model_at_end=args.load_best_model_at_end,
+                metric_for_best_model="eval_f1",
+                greater_is_better=True,
 
-            label_smoothing_factor=args.label_smoothing_factor,  # Label smoothing
-        )
+                label_smoothing_factor=args.label_smoothing_factor,  # Label smoothing
+            )
+        else:
+            training_args = None
 
         trainer = Trainer(
             model=model,
@@ -391,22 +398,41 @@ def main():
         logger.info("*** Train ***")
         trainer.train()
         trainer.save_model(args.output_dir)
+
+        if args.do_eval:
+            logger.info("*** Evaluate ***")
+            metrics = trainer.evaluate()
+            trainer.log_metrics("eval", metrics)
+            trainer.save_metrics("eval", metrics)
+            plot_metrics(trainer.state.log_history, args.output_dir)
+
+        if args.do_predict:
+            logger.info("*** Predict ***")
+            predictions = trainer.predict(tokenized_dataset["test"])
+            metrics = predictions.metrics
+            trainer.log_metrics("test", metrics)
+            trainer.save_metrics("test", metrics)
+
         if trainer.is_world_process_zero() and args.push_to_hub:
             trainer.push_to_hub()
 
-    if args.do_eval:
-        logger.info("*** Evaluate ***")
-        metrics = trainer.evaluate()
-        trainer.log_metrics("eval", metrics)
-        trainer.save_metrics("eval", metrics)
-        plot_metrics(trainer.state.log_history, args.output_dir)
+    else:
+        if args.do_eval:
+            logger.info("*** Evaluate ***")
+            eval_metrics = trainer.evaluate()
+            trainer.log_metrics("eval", eval_metrics)
+            write_json(eval_metrics, os.path.join(args.output_dir, "eval_results.json"))
 
-    if args.do_predict:
-        logger.info("*** Predict ***")
-        predictions = trainer.predict(tokenized_dataset["test"])
-        metrics = predictions.metrics
-        trainer.log_metrics("test", metrics)
-        trainer.save_metrics("test", metrics)
+        if args.do_predict:
+            logger.info("*** Predict ***")
+            predictions = trainer.predict(tokenized_dataset["test"])
+            test_metrics = predictions.metrics
+            trainer.log_metrics("test", test_metrics)
+            write_json(test_metrics, os.path.join(args.output_dir, "test_results.json"))
+
+        if args.do_eval and args.do_predict:
+            all_results = {**eval_metrics, **test_metrics}
+            write_json(all_results, os.path.join(args.output_dir, "all_results.json"))
 
 
 if __name__ == "__main__":
