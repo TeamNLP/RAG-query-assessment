@@ -7,7 +7,7 @@ else
     HUGGINGFACE_TOKEN=None
 fi
 
-for model_path in google/flan-t5-small google/flan-t5-base google/flan-t5-large google/flan-t5-xl google/flan-t5-xxl
+for model_path in google/flan-t5-small
 do
     model_name=${model_path#*/}
 
