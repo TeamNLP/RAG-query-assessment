@@ -22,6 +22,9 @@ experiments/rewritten_data/*
 scripts/_*.sh
 
 .temp/
+tmp_trainer/
+logs/
+temp.py
 
 evaluation/official_evaluation/2wikimultihopqa/*
 !evaluation/official_evaluation/2wikimultihopqa/.gitkeep
