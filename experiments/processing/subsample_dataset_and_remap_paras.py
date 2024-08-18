@@ -13,27 +13,37 @@ def main():
     parser.add_argument(
         "dataset_name", type=str, help="dataset name.", choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad')
     )
-    parser.add_argument("set_name", type=str, help="set name.", choices=("dev", "test", "dev_diff_size"))
+    parser.add_argument("set_name", type=str, help="set name.", choices=("train_diff_size", "dev", "test", "dev_diff_size"))
     parser.add_argument("sample_size", type=int, help="sample_size")
     args = parser.parse_args()
 
     avoid_question_ids_file_path = None
+    secondary_avoid_question_ids_file_path = None
     sample_size = 500
     if args.set_name == "test":
+        input_file_path = os.path.join("processed_data", args.dataset_name, "dev.jsonl")
         dev_file_path = os.path.join("processed_data", args.dataset_name, "dev_subsampled.jsonl")
         avoid_question_ids_file_path = dev_file_path if os.path.exists(dev_file_path) else None
         sample_size = 500
-    
-    if args.set_name == "dev_diff_size":
+    elif args.set_name == "dev_diff_size":
+        input_file_path = os.path.join("processed_data", args.dataset_name, "dev.jsonl")
         avoid_question_ids_file_path = os.path.join("processed_data", args.dataset_name, "test_subsampled.jsonl")
         sample_size = args.sample_size
+    elif args.set_name == "train_diff_size":
+        input_file_path = os.path.join("processed_data", args.dataset_name, "train.jsonl")
+        avoid_question_ids_file_path = os.path.join("processed_data", args.dataset_name, "test_subsampled.jsonl")
+        dev_file_path = os.path.join("processed_data", args.dataset_name, "dev_subsampled.jsonl")
+        secondary_avoid_question_ids_file_path = dev_file_path if os.path.exists(dev_file_path) else None
+        sample_size = args.sample_size
 
-    input_file_path = os.path.join("processed_data", args.dataset_name, "dev.jsonl")
     instances = read_jsonl(input_file_path)
 
     if avoid_question_ids_file_path:
         avoid_ids = set([avoid_instance["question_id"] for avoid_instance in read_jsonl(avoid_question_ids_file_path)])
-        instances = [instance for instance in instances if instance["question_id"] not in avoid_ids]
+        if secondary_avoid_question_ids_file_path:
+            secondary_avoid_ids = set([avoid_instance["question_id"] for avoid_instance in read_jsonl(secondary_avoid_question_ids_file_path)])
+            avoid_ids = avoid_ids | secondary_avoid_ids
+        instances = [instance for instance in instances if instance["question_id"] not in avoid_ids1]
 
     instances = random.sample(instances, sample_size)
 
@@ -44,6 +54,8 @@ def main():
                 # pinned contexts (iirc main) aren't in the associated wikipedia corpus.
                 continue
             if args.set_name == "dev_diff_size":
+                continue
+            if args.set_name == "train_diff_size":
                 continue
 
             if args.dataset_name in ['nq', 'trivia', 'squad']:
@@ -60,6 +72,9 @@ def main():
 
     if args.set_name == "dev_diff_size":
         output_file_path = os.path.join("processed_data", args.dataset_name, f"dev_{args.sample_size}_subsampled.jsonl")
+        write_jsonl(instances, output_file_path)
+    if args.set_name == "train_diff_size":
+        output_file_path = os.path.join("processed_data", args.dataset_name, f"train_{args.sample_size}_subsampled.jsonl")
         write_jsonl(instances, output_file_path)
     else:
         output_file_path = os.path.join("processed_data", args.dataset_name, f"{args.set_name}_subsampled.jsonl")
