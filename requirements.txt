@@ -1,7 +1,8 @@
 accelerate>=0.21.0
 pandas
-# rank_bm25
+rank_bm25
 openai
+tiktoken
 python-dotenv
 loguru
 transformers

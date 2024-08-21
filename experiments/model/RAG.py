@@ -6,7 +6,6 @@ import vllm
 from model.framework import Framework
 from model.prompt_templates import RAG_SYS_PROMPT, RAG_PROMPT_TEMPLATE, RAG_PROMPT_TEMPLATE_WO_INST, RAG_PROMPT_TEMPLATE_SUFFIX
 from openai import OpenAI
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
 class Retriever:

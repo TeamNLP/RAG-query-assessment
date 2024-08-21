@@ -2,3 +2,4 @@
 
 pip install -r requirements.txt
 sh scripts/download_official_eval.sh
+python -m nltk.downloader punkt

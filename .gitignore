@@ -1,3 +1,6 @@
+estimator/
+openai_test.py
+
 api_responses/
 data
 classifier/model/

@@ -11,7 +11,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Save and sample data")
     parser.add_argument(
-        "dataset_name", type=str, help="dataset name.", choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad')
+        "dataset_name", type=str, help="dataset name.", choices=("hotpotqa", "2wikimultihopqa", "musique", 'nq', 'trivia', 'squad', "ms_marco")
     )
     parser.add_argument("set_name", type=str, help="set name.", choices=("train_diff_size", "dev", "test", "dev_diff_size"))
     parser.add_argument("sample_size", type=int, help="sample_size")
@@ -43,7 +43,10 @@ def main():
         if secondary_avoid_question_ids_file_path:
             secondary_avoid_ids = set([avoid_instance["question_id"] for avoid_instance in read_jsonl(secondary_avoid_question_ids_file_path)])
             avoid_ids = avoid_ids | secondary_avoid_ids
-        instances = [instance for instance in instances if instance["question_id"] not in avoid_ids1]
+        instances = [instance for instance in instances if instance["question_id"] not in avoid_ids]
+
+    if args.set_name == "train_diff_size":
+        instances = [instance for instance in instances if sum([context_dict["is_supporting"] for context_dict in instance["contexts"]]) > 0]
 
     instances = random.sample(instances, sample_size)
 
@@ -58,7 +61,7 @@ def main():
             if args.set_name == "train_diff_size":
                 continue
 
-            if args.dataset_name in ['nq', 'trivia', 'squad']:
+            if args.dataset_name in ['nq', 'trivia', 'squad', "ms_marco"]:
                 # retrieved_result = find_matching_paragraph_text('wiki', context["paragraph_text"])
                 continue
             else:

@@ -7,6 +7,13 @@ pip install gdown
 mkdir -p .temp/
 mkdir -p experiments/raw_data
 
+echo "\n\nDownloading raw ms_marco data\n"
+mkdir -p experiments/raw_data/ms_marco
+cd experiments/raw_data
+python download_ms_marco.py
+cd ..
+cd ..
+
 echo "\n\nDownloading raw hotpotqa data\n"
 mkdir -p experiments/raw_data/hotpotqa
 wget http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_train_v1.1.json -O experiments/raw_data/hotpotqa/hotpot_train_v1.1.json
@@ -74,6 +81,9 @@ mkdir -p wiki
 cd wiki
 wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
 gzip -d psgs_w100.tsv.gz
+
+
+mkdir -p experiments/raw_data/2wikimultihopqa
 
 
 # The resulting experiments/raw_data/ directory should look like:
